@@ -5,23 +5,17 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bunx --bun vite",
-		"build": "tsc -b && bunx --bun vite build",
+		"build": "tsc && bunx --bun vite build",
 		"lint": "oxlint",
-		"preview": "bunx --bun vite preview"
+		"preview": "bunx --bun vite preview",
+		"generate:api": "(cd ../Taskmaster-Backend && uv run manage.py spectacular --format openapi-json) > src/api/openapi.json && openapi-typescript src/api/openapi.json -o src/api/schema.d.ts"
 	},
 	"dependencies": {
-		"react": "^19.2.7",
-		"react-dom": "^19.2.7"
+		"openapi-fetch": "^0.17.0"
 	},
 	"devDependencies": {
-		"@babel/core": "^7.29.7",
-		"@rolldown/plugin-babel": "^0.2.3",
-		"@types/babel__core": "^7.20.5",
 		"@types/node": "^24.13.2",
-		"@types/react": "^19.2.17",
-		"@types/react-dom": "^19.2.3",
-		"@vitejs/plugin-react": "^6.0.2",
-		"babel-plugin-react-compiler": "^1.0.0",
+		"openapi-typescript": "^7.13.0",
 		"oxlint": "^1.69.0",
 		"typescript": "~6.0.2",
 		"vite": "^8.1.0"

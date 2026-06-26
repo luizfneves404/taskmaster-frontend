@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated API schema (regenerate with: bun run generate:api)
+src/api/openapi.json
+src/api/schema.d.ts
