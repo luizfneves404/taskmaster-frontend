@@ -13,7 +13,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Invalida (blacklist) o refresh token do usuário autenticado. */
+        /**
+         * Logout (invalida o refresh token).
+         * @description Invalida (blacklist) o refresh token do usuário autenticado.
+         */
         post: operations["auth_logout_create"];
         delete?: never;
         options?: never;
@@ -30,7 +33,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Solicita a redefinição de senha por e-mail (esqueci minha senha). */
+        /**
+         * Esqueci minha senha.
+         * @description Solicita a redefinição de senha por e-mail (esqueci minha senha).
+         */
         post: operations["auth_password_reset_create"];
         delete?: never;
         options?: never;
@@ -47,7 +53,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Confirma a nova senha a partir do uid + token recebidos por e-mail. */
+        /**
+         * Confirma redefinição de senha.
+         * @description Confirma a nova senha a partir do uid + token recebidos por e-mail.
+         */
         post: operations["auth_password_reset_confirm_create"];
         delete?: never;
         options?: never;
@@ -64,8 +73,51 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Cria um novo usuário (cadastro). */
+        /**
+         * Cria um novo usuário (cadastro).
+         * @description Cria um novo usuário (cadastro).
+         */
         post: operations["auth_register_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumo do dashboard.
+         * @description Contagens agregadas para o dashboard: pendentes, vencidas, hoje e concluídas na semana.
+         */
+        get: operations["dashboard_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dashboard/upcoming/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Próximas tarefas do dashboard.
+         * @description Tarefas vencidas, próximas do prazo (7 dias) e de alta prioridade para o dashboard.
+         */
+        get: operations["dashboard_upcoming_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -79,10 +131,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        /**
+         * Lista as listas de tarefas.
+         * @description Lista as listas de tarefas (TaskList) pertencentes ao usuário autenticado.
+         */
         get: operations["lists_list"];
         put?: never;
-        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        /**
+         * Cria uma lista de tarefas.
+         * @description Cria uma nova lista de tarefas (TaskList) para o usuário autenticado.
+         */
         post: operations["lists_create"];
         delete?: never;
         options?: never;
@@ -97,16 +155,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        /**
+         * Detalha uma lista de tarefas.
+         * @description Retorna os dados de uma lista de tarefas do usuário autenticado.
+         */
         get: operations["lists_retrieve"];
-        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        /**
+         * Atualiza uma lista de tarefas.
+         * @description Atualiza integralmente uma lista de tarefas do usuário autenticado.
+         */
         put: operations["lists_update"];
         post?: never;
-        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        /**
+         * Remove uma lista de tarefas.
+         * @description Remove uma lista de tarefas do usuário autenticado.
+         */
         delete: operations["lists_destroy"];
         options?: never;
         head?: never;
-        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        /**
+         * Atualiza parcialmente uma lista de tarefas.
+         * @description Atualiza parcialmente uma lista de tarefas do usuário autenticado.
+         */
         patch: operations["lists_partial_update"];
         trace?: never;
     };
@@ -132,6 +202,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/subtasks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista as subtarefas.
+         * @description Lista as subtarefas vinculadas às tarefas do usuário autenticado.
+         */
+        get: operations["subtasks_list"];
+        put?: never;
+        /**
+         * Cria uma subtarefa.
+         * @description Cria uma nova subtarefa vinculada a uma tarefa do usuário autenticado.
+         */
+        post: operations["subtasks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subtasks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalha uma subtarefa.
+         * @description Retorna os dados de uma subtarefa do usuário autenticado.
+         */
+        get: operations["subtasks_retrieve"];
+        /**
+         * Atualiza uma subtarefa.
+         * @description Atualiza integralmente uma subtarefa do usuário autenticado.
+         */
+        put: operations["subtasks_update"];
+        post?: never;
+        /**
+         * Remove uma subtarefa.
+         * @description Remove uma subtarefa do usuário autenticado.
+         */
+        delete: operations["subtasks_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Atualiza parcialmente uma subtarefa.
+         * @description Atualiza parcialmente uma subtarefa do usuário autenticado.
+         */
+        patch: operations["subtasks_partial_update"];
+        trace?: never;
+    };
+    "/api/subtasks/{id}/toggle/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Alterna status da subtarefa.
+         * @description Alterna a subtarefa entre feita e pendente.
+         */
+        post: operations["subtasks_toggle_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks/": {
         parameters: {
             query?: never;
@@ -139,10 +285,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        /**
+         * Lista as tarefas.
+         * @description Lista as tarefas do usuário autenticado, ordenadas por status, prazo e título.
+         */
         get: operations["tasks_list"];
         put?: never;
-        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        /**
+         * Cria uma tarefa.
+         * @description Cria uma nova tarefa vinculada a uma lista do usuário autenticado.
+         */
         post: operations["tasks_create"];
         delete?: never;
         options?: never;
@@ -157,17 +309,109 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        /**
+         * Detalha uma tarefa.
+         * @description Retorna os dados de uma tarefa do usuário autenticado.
+         */
         get: operations["tasks_retrieve"];
-        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        /**
+         * Atualiza uma tarefa.
+         * @description Atualiza integralmente uma tarefa do usuário autenticado.
+         */
         put: operations["tasks_update"];
         post?: never;
-        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        /**
+         * Remove uma tarefa.
+         * @description Remove uma tarefa do usuário autenticado.
+         */
         delete: operations["tasks_destroy"];
         options?: never;
         head?: never;
-        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        /**
+         * Atualiza parcialmente uma tarefa.
+         * @description Atualiza parcialmente uma tarefa do usuário autenticado.
+         */
         patch: operations["tasks_partial_update"];
+        trace?: never;
+    };
+    "/api/tasks/{id}/toggle/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Alterna status da tarefa.
+         * @description Alterna o status da tarefa entre concluída e pendente.
+         */
+        post: operations["tasks_toggle_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/completed/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tarefas concluídas.
+         * @description Lista as tarefas concluídas do usuário autenticado.
+         */
+        get: operations["tasks_completed_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/late/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tarefas atrasadas.
+         * @description Lista as tarefas pendentes com prazo (due_date) já vencido.
+         */
+        get: operations["tasks_late_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/today/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tarefas de hoje.
+         * @description Lista as tarefas planejadas ou com prazo (due_date) para hoje.
+         */
+        get: operations["tasks_today_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/token/": {
@@ -217,7 +461,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Retorna ou atualiza os dados do usuário autenticado (página do usuário). */
+        /**
+         * Dados do usuário autenticado.
+         * @description Retorna os dados do usuário autenticado (página do usuário).
+         */
         get: operations["users_me_retrieve"];
         /** @description Retorna ou atualiza os dados do usuário autenticado (página do usuário). */
         put: operations["users_me_update"];
@@ -225,7 +472,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Retorna ou atualiza os dados do usuário autenticado (página do usuário). */
+        /**
+         * Atualiza dados do usuário autenticado.
+         * @description Atualiza parcialmente os dados da conta do usuário autenticado (ex.: e-mail).
+         */
         patch: operations["users_me_partial_update"];
         trace?: never;
     };
@@ -238,7 +488,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Troca a senha do usuário autenticado, exigindo a senha atual. */
+        /**
+         * Troca de senha.
+         * @description Troca a senha do usuário autenticado, exigindo a senha atual.
+         */
         post: operations["users_me_change_password_create"];
         delete?: never;
         options?: never;
@@ -255,6 +508,13 @@ export interface components {
             current_password: string;
             new_password: string;
         };
+        /** @description Contagens agregadas exibidas no painel inicial do dashboard. */
+        DashboardSummary: {
+            pending: number;
+            overdue: number;
+            today: number;
+            completed_week: number;
+        };
         /** @description Invalida o refresh token do usuário, colocando-o na blacklist. */
         Logout: {
             refresh: string;
@@ -269,6 +529,15 @@ export interface components {
         PasswordResetRequest: {
             /** Format: email */
             email: string;
+        };
+        /** @description Serializer de subtarefas (SubTask), vinculadas a uma Task do usuário autenticado. */
+        PatchedSubTask: {
+            readonly id?: number;
+            task?: number;
+            title?: string;
+            done?: boolean;
+            /** Format: date-time */
+            readonly created_at?: string;
         };
         /** @description Serializer de tarefas (Task), vinculadas a uma TaskList do usuário autenticado. */
         PatchedTask: {
@@ -298,6 +567,7 @@ export interface components {
             readonly user?: number;
             /** Format: date-time */
             readonly created_at?: string;
+            readonly pending_count?: number;
         };
         /** @description Dados da conta do usuário autenticado (página do usuário). */
         PatchedUser: {
@@ -348,6 +618,15 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "pending" | "in_progress" | "done";
+        /** @description Serializer de subtarefas (SubTask), vinculadas a uma Task do usuário autenticado. */
+        SubTask: {
+            readonly id: number;
+            task: number;
+            title: string;
+            done?: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         /** @description Serializer de tarefas (Task), vinculadas a uma TaskList do usuário autenticado. */
         Task: {
             readonly id: number;
@@ -376,6 +655,7 @@ export interface components {
             readonly user: number;
             /** Format: date-time */
             readonly created_at: string;
+            readonly pending_count: number;
         };
         TokenObtainPair: {
             username: string;
@@ -434,13 +714,12 @@ export interface operations {
             };
         };
         responses: {
-            200: {
+            /** @description Token invalidado com sucesso. */
+            205: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["Logout"];
-                };
+                content?: never;
             };
         };
     };
@@ -459,13 +738,12 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Mensagem genérica de confirmação (não revela se o e-mail existe). */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["PasswordResetRequest"];
-                };
+                content?: never;
             };
         };
     };
@@ -484,13 +762,12 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Senha redefinida com sucesso. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["PasswordResetConfirm"];
-                };
+                content?: never;
             };
         };
     };
@@ -515,6 +792,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Register"];
+                };
+            };
+        };
+    };
+    dashboard_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardSummary"];
+                };
+            };
+        };
+    };
+    dashboard_upcoming_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"][];
                 };
             };
         };
@@ -695,9 +1010,177 @@ export interface operations {
             };
         };
     };
-    tasks_list: {
+    subtasks_list: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubTask"][];
+                };
+            };
+        };
+    };
+    subtasks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubTask"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubTask"];
+                "multipart/form-data": components["schemas"]["SubTask"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubTask"];
+                };
+            };
+        };
+    };
+    subtasks_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este sub task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubTask"];
+                };
+            };
+        };
+    };
+    subtasks_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este sub task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubTask"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubTask"];
+                "multipart/form-data": components["schemas"]["SubTask"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubTask"];
+                };
+            };
+        };
+    };
+    subtasks_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este sub task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    subtasks_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este sub task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSubTask"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSubTask"];
+                "multipart/form-data": components["schemas"]["PatchedSubTask"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubTask"];
+                };
+            };
+        };
+    };
+    subtasks_toggle_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este sub task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubTask"];
+                };
+            };
+        };
+    };
+    tasks_list: {
+        parameters: {
+            query?: {
+                /** @description Qual campo usar ao ordenar os resultados. */
+                ordering?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -838,6 +1321,94 @@ export interface operations {
             };
         };
     };
+    tasks_toggle_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    tasks_completed_list: {
+        parameters: {
+            query?: {
+                /** @description Qual campo usar ao ordenar os resultados. */
+                ordering?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"][];
+                };
+            };
+        };
+    };
+    tasks_late_list: {
+        parameters: {
+            query?: {
+                /** @description Qual campo usar ao ordenar os resultados. */
+                ordering?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"][];
+                };
+            };
+        };
+    };
+    tasks_today_list: {
+        parameters: {
+            query?: {
+                /** @description Qual campo usar ao ordenar os resultados. */
+                ordering?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"][];
+                };
+            };
+        };
+    };
     token_create: {
         parameters: {
             query?: never;
@@ -972,13 +1543,12 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Senha atualizada com sucesso. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ChangePassword"];
-                };
+                content?: never;
             };
         };
     };

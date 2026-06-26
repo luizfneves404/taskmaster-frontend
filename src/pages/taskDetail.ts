@@ -1,8 +1,9 @@
 import client from "../api/client.ts";
+import type { components } from "../api/schema.d.ts";
 import { priorityBadge, statusBadge } from "../components/badges.ts";
 import { openConfirmModal } from "../components/modal.ts";
 import { navigate } from "../navigate.ts";
-import type { Task, TaskList } from "../types.ts";
+import type { SubTask, Task, TaskList } from "../types.ts";
 import { escapeHtml, formatDate, formatDateTime } from "../utils.ts";
 import { openTaskModal } from "./listDetail.ts";
 
@@ -10,9 +11,14 @@ export async function renderTaskDetail(id: number): Promise<void> {
 	const page = document.querySelector<HTMLElement>("#page")!;
 	page.innerHTML = `<div class="flex justify-center py-12"><span class="loading loading-spinner loading-lg"></span></div>`;
 
-	const [{ data: task, response }, { data: lists = [] }] = await Promise.all([
+	const [
+		{ data: task, response },
+		{ data: lists = [] },
+		{ data: subtasks = [] },
+	] = await Promise.all([
 		client.GET("/api/tasks/{id}/", { params: { path: { id } } }),
 		client.GET("/api/lists/"),
+		client.GET("/api/subtasks/"),
 	]);
 
 	if (!response.ok || !task) {
@@ -20,13 +26,24 @@ export async function renderTaskDetail(id: number): Promise<void> {
 		return;
 	}
 
-	renderTaskDetailContent(task, lists);
+	// SubTaskViewSet não filtra por task no servidor; filtramos no cliente.
+	const taskSubtasks = subtasks.filter((s) => s.task === id);
+	renderTaskDetailContent(task, lists, taskSubtasks);
 }
 
-function renderTaskDetailContent(task: Task, lists: TaskList[]): void {
+function renderTaskDetailContent(
+	task: Task,
+	lists: TaskList[],
+	subtasks: SubTask[],
+): void {
 	const page = document.querySelector<HTMLElement>("#page")!;
 	const listName = lists.find((l) => l.id === task.task_list)?.name ?? "Lista";
 	const done = task.status === "done";
+
+	const sortedSubtasks = [...subtasks].sort((a, b) => {
+		if (a.done !== b.done) return a.done ? 1 : -1;
+		return a.id - b.id;
+	});
 
 	page.innerHTML = `
     <div class="py-6 max-w-2xl mx-auto flex flex-col gap-6">
@@ -70,10 +87,27 @@ function renderTaskDetailContent(task: Task, lists: TaskList[]): void {
         </div>
       </div>
 
+      <div class="card bg-base-100 border border-base-200">
+        <div class="card-body p-4 gap-3">
+          <h2 class="card-title text-base">Subtarefas</h2>
+          <form id="subtask-form" class="join w-full">
+            <input name="title" type="text" placeholder="Nova subtarefa..." class="input input-bordered join-item flex-1" required />
+            <button class="btn btn-primary join-item" type="submit">Adicionar</button>
+          </form>
+          ${
+						sortedSubtasks.length === 0
+							? `<p class="text-base-content/50 text-sm">Nenhuma subtarefa ainda.</p>`
+							: `<ul class="flex flex-col gap-2">
+              ${sortedSubtasks.map((s) => subtaskRow(s)).join("")}
+            </ul>`
+					}
+        </div>
+      </div>
+
       <div>
         ${
 					done
-						? `<span class="badge badge-success badge-lg">Concluída</span>`
+						? `<button id="reopen-task-btn" class="btn btn-outline">Reabrir tarefa</button>`
 						: `<button id="mark-done-btn" class="btn btn-success">Marcar como concluída</button>`
 				}
       </div>
@@ -101,14 +135,78 @@ function renderTaskDetailContent(task: Task, lists: TaskList[]): void {
 		);
 	});
 
+	const toggleTask = async (e: Event): Promise<void> => {
+		(e.currentTarget as HTMLButtonElement).disabled = true;
+		const { response } = await client.POST("/api/tasks/{id}/toggle/", {
+			params: { path: { id: task.id } },
+		});
+		if (response.ok) renderTaskDetail(task.id);
+	};
+
 	document
 		.querySelector<HTMLButtonElement>("#mark-done-btn")
-		?.addEventListener("click", async (e) => {
-			(e.currentTarget as HTMLButtonElement).disabled = true;
-			const { response } = await client.PATCH("/api/tasks/{id}/", {
-				params: { path: { id: task.id } },
-				body: { status: "done" },
+		?.addEventListener("click", toggleTask);
+	document
+		.querySelector<HTMLButtonElement>("#reopen-task-btn")
+		?.addEventListener("click", toggleTask);
+
+	wireSubtasks(task.id);
+}
+
+function subtaskRow(s: SubTask): string {
+	return `
+    <li class="flex items-center justify-between gap-2 rounded-box border border-base-200 p-2 pl-3">
+      <span class="text-sm ${s.done ? "line-through text-base-content/50" : ""}">${escapeHtml(s.title)}</span>
+      <div class="flex gap-1 shrink-0">
+        <button class="btn btn-xs ${s.done ? "btn-ghost" : "btn-success"} toggle-subtask-btn" data-id="${s.id}">${s.done ? "Desmarcar" : "Concluir"}</button>
+        <button class="btn btn-xs btn-error btn-outline delete-subtask-btn" data-id="${s.id}" data-title="${escapeHtml(s.title)}">Excluir</button>
+      </div>
+    </li>`;
+}
+
+function wireSubtasks(taskId: number): void {
+	const form = document.querySelector<HTMLFormElement>("#subtask-form");
+	form?.addEventListener("submit", async (e) => {
+		e.preventDefault();
+		const input = form.elements.namedItem("title") as HTMLInputElement;
+		const title = input.value.trim();
+		if (!title) return;
+		const submitBtn = form.querySelector<HTMLButtonElement>(
+			"button[type=submit]",
+		)!;
+		submitBtn.disabled = true;
+		const { response } = await client.POST("/api/subtasks/", {
+			body: { task: taskId, title } as components["schemas"]["SubTask"],
+		});
+		if (response.ok) renderTaskDetail(taskId);
+		else submitBtn.disabled = false;
+	});
+
+	document
+		.querySelectorAll<HTMLButtonElement>(".toggle-subtask-btn")
+		.forEach((btn) => {
+			btn.addEventListener("click", async () => {
+				btn.disabled = true;
+				await client.POST("/api/subtasks/{id}/toggle/", {
+					params: { path: { id: Number(btn.dataset.id) } },
+				});
+				renderTaskDetail(taskId);
 			});
-			if (response.ok) renderTaskDetail(task.id);
+		});
+
+	document
+		.querySelectorAll<HTMLButtonElement>(".delete-subtask-btn")
+		.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				openConfirmModal(
+					`Excluir a subtarefa "<strong>${escapeHtml(btn.dataset.title ?? "")}</strong>"?`,
+					async () => {
+						await client.DELETE("/api/subtasks/{id}/", {
+							params: { path: { id: Number(btn.dataset.id) } },
+						});
+						renderTaskDetail(taskId);
+					},
+				);
+			});
 		});
 }

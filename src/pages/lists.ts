@@ -13,26 +13,12 @@ export async function renderLists(): Promise<void> {
 	const page = document.querySelector<HTMLElement>("#page")!;
 	page.innerHTML = `<div class="flex justify-center py-12"><span class="loading loading-spinner loading-lg"></span></div>`;
 
-	const [{ data: lists = [] }, { data: tasks = [] }] = await Promise.all([
-		client.GET("/api/lists/"),
-		client.GET("/api/tasks/"),
-	]);
+	const { data: lists = [] } = await client.GET("/api/lists/");
 
-	const taskCountByList = new Map<number, number>();
-	for (const t of tasks) {
-		taskCountByList.set(
-			t.task_list,
-			(taskCountByList.get(t.task_list) ?? 0) + 1,
-		);
-	}
-
-	renderListsContent(lists, taskCountByList);
+	renderListsContent(lists);
 }
 
-function renderListsContent(
-	lists: TaskList[],
-	taskCountByList: Map<number, number>,
-): void {
+function renderListsContent(lists: TaskList[]): void {
 	const page = document.querySelector<HTMLElement>("#page")!;
 
 	page.innerHTML = `
@@ -49,7 +35,7 @@ function renderListsContent(
             <p class="text-sm mt-1">Crie sua primeira lista para organizar suas tarefas.</p>
           </div>`
 					: `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${lists.map((list) => listCard(list, taskCountByList.get(list.id) ?? 0)).join("")}
+          ${lists.map((list) => listCard(list)).join("")}
         </div>`
 			}
     </div>
@@ -90,8 +76,9 @@ function renderListsContent(
 		});
 }
 
-function listCard(list: TaskList, taskCount: number): string {
+function listCard(list: TaskList): string {
 	const color = list.color ?? "#e5e7eb";
+	const pending = list.pending_count ?? 0;
 	return `
     <a href="#/lists/${list.id}" class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow border-l-4 block" style="border-left-color: ${escapeHtml(color)}">
       <div class="card-body p-4 gap-2">
@@ -100,7 +87,7 @@ function listCard(list: TaskList, taskCount: number): string {
             <span class="w-3 h-3 rounded-full shrink-0" style="background: ${escapeHtml(color)}"></span>
             <span class="font-semibold truncate">${escapeHtml(list.name)}</span>
           </div>
-          <span class="badge badge-ghost badge-sm shrink-0">${taskCount} tarefa${taskCount !== 1 ? "s" : ""}</span>
+          <span class="badge badge-ghost badge-sm shrink-0">${pending} pendente${pending !== 1 ? "s" : ""}</span>
         </div>
         ${list.description ? `<p class="text-base-content/60 text-sm line-clamp-2">${escapeHtml(list.description)}</p>` : ""}
         <div class="flex gap-2 mt-1" onclick="event.preventDefault()">

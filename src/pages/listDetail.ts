@@ -135,14 +135,13 @@ function renderListDetailContent(list: TaskList, tasks: Task[]): void {
 		});
 
 	document
-		.querySelectorAll<HTMLButtonElement>(".mark-done-btn")
+		.querySelectorAll<HTMLButtonElement>(".toggle-task-btn")
 		.forEach((btn) => {
 			btn.addEventListener("click", async (e) => {
 				e.preventDefault();
 				btn.disabled = true;
-				await client.PATCH("/api/tasks/{id}/", {
+				await client.POST("/api/tasks/{id}/toggle/", {
 					params: { path: { id: Number(btn.dataset.id) } },
-					body: { status: "done" },
 				});
 				renderListDetail(list.id);
 			});
@@ -175,7 +174,11 @@ function taskCard(t: Task): string {
         <div class="flex gap-2 mt-1" onclick="event.preventDefault()">
           <button class="btn btn-xs btn-ghost edit-task-btn" data-id="${t.id}">Editar</button>
           <button class="btn btn-xs btn-error btn-outline delete-task-btn" data-id="${t.id}">Excluir</button>
-          ${!done ? `<button class="btn btn-xs btn-success mark-done-btn" data-id="${t.id}">Concluir</button>` : ""}
+          ${
+						done
+							? `<button class="btn btn-xs btn-ghost toggle-task-btn" data-id="${t.id}">Reabrir</button>`
+							: `<button class="btn btn-xs btn-success toggle-task-btn" data-id="${t.id}">Concluir</button>`
+					}
         </div>
       </div>
     </a>
