@@ -4,6 +4,74 @@
  */
 
 export interface paths {
+    "/api/auth/logout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Invalida (blacklist) o refresh token do usuário autenticado. */
+        post: operations["auth_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password-reset/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Solicita a redefinição de senha por e-mail (esqueci minha senha). */
+        post: operations["auth_password_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password-reset/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirma a nova senha a partir do uid + token recebidos por e-mail. */
+        post: operations["auth_password_reset_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cria um novo usuário (cadastro). */
+        post: operations["auth_register_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lists/": {
         parameters: {
             query?: never;
@@ -142,10 +210,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/me/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retorna ou atualiza os dados do usuário autenticado (página do usuário). */
+        get: operations["users_me_retrieve"];
+        /** @description Retorna ou atualiza os dados do usuário autenticado (página do usuário). */
+        put: operations["users_me_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Retorna ou atualiza os dados do usuário autenticado (página do usuário). */
+        patch: operations["users_me_partial_update"];
+        trace?: never;
+    };
+    "/api/users/me/change-password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Troca a senha do usuário autenticado, exigindo a senha atual. */
+        post: operations["users_me_change_password_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Troca de senha do usuário autenticado, exigindo a senha atual. */
+        ChangePassword: {
+            current_password: string;
+            new_password: string;
+        };
+        /** @description Invalida o refresh token do usuário, colocando-o na blacklist. */
+        Logout: {
+            refresh: string;
+        };
+        /** @description Confirma a nova senha a partir do uid + token recebidos por e-mail. */
+        PasswordResetConfirm: {
+            uid: string;
+            token: string;
+            new_password: string;
+        };
+        /** @description Solicita o envio do e-mail de redefinição de senha (esqueci minha senha). */
+        PasswordResetRequest: {
+            /** Format: email */
+            email: string;
+        };
         /** @description Serializer de tarefas (Task), vinculadas a uma TaskList do usuário autenticado. */
         PatchedTask: {
             readonly id?: number;
@@ -175,6 +299,29 @@ export interface components {
             /** Format: date-time */
             readonly created_at?: string;
         };
+        /** @description Dados da conta do usuário autenticado (página do usuário). */
+        PatchedUser: {
+            readonly id?: number;
+            /**
+             * Usuário
+             * @description Obrigatório. 150 caracteres ou menos. Letras, números e @/./+/-/_ apenas.
+             */
+            readonly username?: string;
+            /**
+             * Endereço de email
+             * Format: email
+             */
+            email?: string;
+            /** Primeiro nome */
+            first_name?: string;
+            /** Último nome */
+            last_name?: string;
+            /**
+             * Data de registro
+             * Format: date-time
+             */
+            readonly date_joined?: string;
+        };
         /**
          * @description * `low` - Baixa
          *     * `medium` - Média
@@ -182,6 +329,18 @@ export interface components {
          * @enum {string}
          */
         PriorityEnum: "low" | "medium" | "high";
+        /** @description Cria um novo usuário, validando e gravando a senha com hash (create_user). */
+        Register: {
+            readonly id: number;
+            /**
+             * Usuário
+             * @description Obrigatório. 150 caracteres ou menos. Letras, números e @/./+/-/_ apenas.
+             */
+            username: string;
+            /** Format: email */
+            email: string;
+            password: string;
+        };
         /**
          * @description * `pending` - Pendente
          *     * `in_progress` - Em andamento
@@ -228,6 +387,29 @@ export interface components {
             readonly access: string;
             refresh: string;
         };
+        /** @description Dados da conta do usuário autenticado (página do usuário). */
+        User: {
+            readonly id: number;
+            /**
+             * Usuário
+             * @description Obrigatório. 150 caracteres ou menos. Letras, números e @/./+/-/_ apenas.
+             */
+            readonly username: string;
+            /**
+             * Endereço de email
+             * Format: email
+             */
+            email?: string;
+            /** Primeiro nome */
+            first_name?: string;
+            /** Último nome */
+            last_name?: string;
+            /**
+             * Data de registro
+             * Format: date-time
+             */
+            readonly date_joined: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -237,6 +419,106 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    auth_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Logout"];
+                "application/x-www-form-urlencoded": components["schemas"]["Logout"];
+                "multipart/form-data": components["schemas"]["Logout"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Logout"];
+                };
+            };
+        };
+    };
+    auth_password_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetRequest"];
+                };
+            };
+        };
+    };
+    auth_password_reset_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirm"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetConfirm"];
+                "multipart/form-data": components["schemas"]["PasswordResetConfirm"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetConfirm"];
+                };
+            };
+        };
+    };
+    auth_register_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Register"];
+                "application/x-www-form-urlencoded": components["schemas"]["Register"];
+                "multipart/form-data": components["schemas"]["Register"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Register"];
+                };
+            };
+        };
+    };
     lists_list: {
         parameters: {
             query?: never;
@@ -602,6 +884,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenRefresh"];
+                };
+            };
+        };
+    };
+    users_me_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    users_me_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["User"];
+                "application/x-www-form-urlencoded": components["schemas"]["User"];
+                "multipart/form-data": components["schemas"]["User"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    users_me_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedUser"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedUser"];
+                "multipart/form-data": components["schemas"]["PatchedUser"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    users_me_change_password_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePassword"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChangePassword"];
+                "multipart/form-data": components["schemas"]["ChangePassword"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangePassword"];
                 };
             };
         };
