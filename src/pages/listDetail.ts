@@ -13,11 +13,17 @@ import {
 } from "../components/modal.ts";
 import { navigate } from "../navigate.ts";
 import type { Task, TaskList } from "../types.ts";
-import { escapeHtml, extractError, fieldValue, formatDate } from "../utils.ts";
+import { createElement, extractError, fieldValue, formatDate } from "../utils.ts";
 
 export async function renderListDetail(id: number): Promise<void> {
 	const page = document.querySelector<HTMLElement>("#page")!;
-	page.innerHTML = `<div class="flex justify-center py-12"><span class="loading loading-spinner loading-lg"></span></div>`;
+	page.replaceChildren(
+		createElement(
+			"div",
+			{ className: "flex justify-center py-12" },
+			createElement("span", { className: "loading loading-spinner loading-lg" }),
+		),
+	);
 
 	const [{ data: list, response }, { data: tasks = [] }] = await Promise.all([
 		client.GET("/api/lists/{id}/", { params: { path: { id } } }),
@@ -25,7 +31,18 @@ export async function renderListDetail(id: number): Promise<void> {
 	]);
 
 	if (!response.ok || !list) {
-		page.innerHTML = `<div class="alert alert-error mt-8">Lista não encontrada. <a href="#/lists" class="link">Voltar</a></div>`;
+		page.replaceChildren(
+			createElement(
+				"div",
+				{ className: "alert alert-error mt-8" },
+				"Lista não encontrada. ",
+				createElement("a", {
+					href: "#/lists",
+					className: "link",
+					textContent: "Voltar",
+				}),
+			),
+		);
 		return;
 	}
 
@@ -49,162 +66,289 @@ function renderListDetailContent(list: TaskList, tasks: Task[]): void {
 		return a.title.localeCompare(b.title);
 	});
 
-	page.innerHTML = `
-    <div class="py-6 flex flex-col gap-6">
-      <a href="#/lists" class="btn btn-ghost btn-sm w-fit">← Listas</a>
+	const header = createElement(
+		"div",
+		{
+			className:
+				"flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3",
+		},
+		createElement(
+			"div",
+			{ className: "flex items-center gap-3" },
+			createElement("span", {
+				className: "w-4 h-4 rounded-full shrink-0",
+				style: `background: ${color}`,
+			}),
+			createElement(
+				"div",
+				{},
+				createElement("h1", {
+					className: "text-2xl font-bold",
+					textContent: list.name,
+				}),
+				list.description
+					? createElement("p", {
+							className: "text-base-content/60 text-sm mt-0.5",
+							textContent: list.description,
+						})
+					: null,
+			),
+		),
+		createElement(
+			"div",
+			{ className: "flex gap-2 shrink-0" },
+			createElement("button", {
+				id: "new-task-btn",
+				className: "btn btn-primary btn-sm",
+				textContent: "+ Nova tarefa",
+				onclick: () => {
+					openTaskModal(null, list.id, async () => renderListDetail(list.id));
+				},
+			}),
+			createElement("button", {
+				id: "edit-list-btn",
+				className: "btn btn-ghost btn-sm",
+				textContent: "Editar",
+				onclick: () => {
+					openListEditModal(list, async () => renderListDetail(list.id));
+				},
+			}),
+			createElement("button", {
+				id: "delete-list-btn",
+				className: "btn btn-error btn-outline btn-sm",
+				textContent: "Excluir",
+				onclick: () => {
+					const strong = createElement("strong", { textContent: list.name });
+					openConfirmModal(
+						[
+							'Excluir a lista "',
+							strong,
+							'"? Todas as tarefas serão removidas.',
+						],
+						async () => {
+							await client.DELETE("/api/lists/{id}/", {
+								params: { path: { id: list.id } },
+							});
+							navigate("#/lists");
+						},
+					);
+				},
+			}),
+		),
+	);
 
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <span class="w-4 h-4 rounded-full shrink-0" style="background: ${escapeHtml(color)}"></span>
-          <div>
-            <h1 class="text-2xl font-bold">${escapeHtml(list.name)}</h1>
-            ${list.description ? `<p class="text-base-content/60 text-sm mt-0.5">${escapeHtml(list.description)}</p>` : ""}
-          </div>
-        </div>
-        <div class="flex gap-2 shrink-0">
-          <button id="new-task-btn" class="btn btn-primary btn-sm">+ Nova tarefa</button>
-          <button id="edit-list-btn" class="btn btn-ghost btn-sm">Editar</button>
-          <button id="delete-list-btn" class="btn btn-error btn-outline btn-sm">Excluir</button>
-        </div>
-      </div>
-
-      <div class="text-sm text-base-content/60">${tasks.length} tarefa${tasks.length !== 1 ? "s" : ""}</div>
-
-      ${
-				sorted.length === 0
-					? `<div class="text-center py-16 text-base-content/50">
-            <p class="text-lg">Nenhuma tarefa nesta lista.</p>
-            <p class="text-sm mt-1">Crie sua primeira tarefa.</p>
-          </div>`
-					: `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${sorted.map((t) => taskCard(t)).join("")}
-          </div>`
-			}
-    </div>
-  `;
-
-	document.querySelector("#new-task-btn")!.addEventListener("click", () => {
-		openTaskModal(null, list.id, async () => renderListDetail(list.id));
-	});
-
-	document.querySelector("#edit-list-btn")!.addEventListener("click", () => {
-		openListEditModal(list, async () => renderListDetail(list.id));
-	});
-
-	document.querySelector("#delete-list-btn")!.addEventListener("click", () => {
-		openConfirmModal(
-			`Excluir a lista "<strong>${escapeHtml(list.name)}</strong>"? Todas as tarefas serão removidas.`,
-			async () => {
-				await client.DELETE("/api/lists/{id}/", {
-					params: { path: { id: list.id } },
-				});
-				navigate("#/lists");
-			},
+	let tasksContent: HTMLElement;
+	if (sorted.length === 0) {
+		tasksContent = createElement(
+			"div",
+			{ className: "text-center py-16 text-base-content/50" },
+			createElement("p", {
+				className: "text-lg",
+				textContent: "Nenhuma tarefa nesta lista.",
+			}),
+			createElement("p", {
+				className: "text-sm mt-1",
+				textContent: "Crie sua primeira tarefa.",
+			}),
 		);
-	});
-
-	document
-		.querySelectorAll<HTMLButtonElement>(".edit-task-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", (e) => {
-				e.preventDefault();
-				const id = Number(btn.dataset.id);
-				const task = tasks.find((t) => t.id === id);
-				if (task)
-					openTaskModal(task, list.id, async () => renderListDetail(list.id));
-			});
+	} else {
+		const grid = createElement("div", {
+			className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
 		});
-
-	document
-		.querySelectorAll<HTMLButtonElement>(".delete-task-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", (e) => {
-				e.preventDefault();
-				const id = Number(btn.dataset.id);
-				const task = tasks.find((t) => t.id === id);
-				openConfirmModal(
-					`Excluir a tarefa "<strong>${escapeHtml(task?.title ?? "")}</strong>"?`,
-					async () => {
-						await client.DELETE("/api/tasks/{id}/", {
-							params: { path: { id } },
-						});
-						renderListDetail(list.id);
-					},
-				);
-			});
+		sorted.forEach((t) => {
+			const card = taskCard(
+				t,
+				() =>
+					openTaskModal(t, list.id, async () => renderListDetail(list.id)),
+				() => {
+					const strong = createElement("strong", { textContent: t.title });
+					openConfirmModal(
+						['Excluir a tarefa "', strong, '"?'],
+						async () => {
+							await client.DELETE("/api/tasks/{id}/", {
+								params: { path: { id: t.id } },
+							});
+							renderListDetail(list.id);
+						},
+					);
+				},
+				async () => {
+					await client.POST("/api/tasks/{id}/toggle/", {
+						params: { path: { id: t.id } },
+					});
+					renderListDetail(list.id);
+				},
+			);
+			grid.append(card);
 		});
+		tasksContent = grid;
+	}
 
-	document
-		.querySelectorAll<HTMLButtonElement>(".toggle-task-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", async (e) => {
-				e.preventDefault();
-				btn.disabled = true;
-				await client.POST("/api/tasks/{id}/toggle/", {
-					params: { path: { id: Number(btn.dataset.id) } },
-				});
-				renderListDetail(list.id);
-			});
-		});
+	const container = createElement(
+		"div",
+		{ className: "py-6 flex flex-col gap-6" },
+		createElement(
+			"a",
+			{
+				href: "#/lists",
+				className: "btn btn-ghost btn-sm w-fit",
+				textContent: "← Listas",
+			},
+		),
+		header,
+		createElement("div", {
+			className: "text-sm text-base-content/60",
+			textContent: `${tasks.length} tarefa${tasks.length !== 1 ? "s" : ""}`,
+		}),
+		tasksContent,
+	);
+
+	page.replaceChildren(container);
 }
 
-function taskCard(t: Task): string {
+function taskCard(
+	t: Task,
+	onEdit: () => void,
+	onDelete: () => void,
+	onToggle: () => void,
+): HTMLElement {
 	const border = priorityBorder(t.priority ?? "medium");
 	const done = t.status === "done";
-	return `
-    <a href="#/tasks/${t.id}" class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow border-l-4 ${border} block ${done ? "opacity-60" : ""}">
-      <div class="card-body p-4 gap-2">
-        <div class="flex items-start justify-between gap-2">
-          <span class="font-medium leading-snug ${done ? "line-through" : ""}">${escapeHtml(t.title)}</span>
-          ${statusBadge(t.status ?? "pending")}
-        </div>
-        <div class="flex gap-1 flex-wrap">
-          ${priorityBadge(t.priority ?? "medium")}
-        </div>
-        ${t.description ? `<p class="text-base-content/60 text-xs line-clamp-2">${escapeHtml(t.description)}</p>` : ""}
-        ${
-					t.planned_date || t.due_date
-						? `<p class="text-xs text-base-content/50">
-            ${t.planned_date ? `Planejada: ${formatDate(t.planned_date)}` : ""}
-            ${t.planned_date && t.due_date ? " · " : ""}
-            ${t.due_date ? `Prazo: ${formatDate(t.due_date)}` : ""}
-          </p>`
-						: ""
-				}
-        <div class="flex gap-2 mt-1" onclick="event.preventDefault()">
-          <button class="btn btn-xs btn-ghost edit-task-btn" data-id="${t.id}">Editar</button>
-          <button class="btn btn-xs btn-error btn-outline delete-task-btn" data-id="${t.id}">Excluir</button>
-          ${
-						done
-							? `<button class="btn btn-xs btn-ghost toggle-task-btn" data-id="${t.id}">Reabrir</button>`
-							: `<button class="btn btn-xs btn-success toggle-task-btn" data-id="${t.id}">Concluir</button>`
-					}
-        </div>
-      </div>
-    </a>
-  `;
+
+	const card = createElement(
+		"a",
+		{
+			href: `#/tasks/${t.id}`,
+			className: `card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow border-l-4 ${border} block ${done ? "opacity-60" : ""}`,
+		},
+		createElement(
+			"div",
+			{ className: "card-body p-4 gap-2" },
+			createElement(
+				"div",
+				{ className: "flex items-start justify-between gap-2" },
+				createElement("span", {
+					className: `font-medium leading-snug ${done ? "line-through" : ""}`,
+					textContent: t.title,
+				}),
+				statusBadge(t.status ?? "pending"),
+			),
+			createElement(
+				"div",
+				{ className: "flex gap-1 flex-wrap" },
+				priorityBadge(t.priority ?? "medium"),
+			),
+			t.description
+				? createElement("p", {
+						className: "text-base-content/60 text-xs line-clamp-2",
+						textContent: t.description,
+					})
+				: null,
+			t.planned_date || t.due_date
+				? createElement(
+						"p",
+						{ className: "text-xs text-base-content/50" },
+						t.planned_date ? `Planejada: ${formatDate(t.planned_date)}` : "",
+						t.planned_date && t.due_date ? " · " : "",
+						t.due_date ? `Prazo: ${formatDate(t.due_date)}` : "",
+					)
+				: null,
+			createElement(
+				"div",
+				{
+					className: "flex gap-2 mt-1",
+					onclick: (e: Event) => {
+						e.preventDefault();
+					},
+				},
+				createElement("button", {
+					className: "btn btn-xs btn-ghost",
+					textContent: "Editar",
+					onclick: (e: Event) => {
+						e.preventDefault();
+						onEdit();
+					},
+				}),
+				createElement("button", {
+					className: "btn btn-xs btn-error btn-outline",
+					textContent: "Excluir",
+					onclick: (e: Event) => {
+						e.preventDefault();
+						onDelete();
+					},
+				}),
+				createElement("button", {
+					className: `btn btn-xs ${done ? "btn-ghost" : "btn-success"}`,
+					textContent: done ? "Reabrir" : "Concluir",
+					onclick: (e: Event) => {
+						e.preventDefault();
+						onToggle();
+					},
+				}),
+			),
+		),
+	);
+	return card;
 }
 
 function openListEditModal(list: TaskList, onSaved: () => Promise<void>): void {
+	const body = createElement(
+		"div",
+		{ className: "flex flex-col gap-3" },
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Nome" }),
+			),
+			createElement("input", {
+				name: "name",
+				className: "input input-bordered w-full",
+				required: true,
+				value: list.name,
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", {
+					className: "label-text",
+					textContent: "Descrição",
+				}),
+			),
+			createElement("textarea", {
+				name: "description",
+				className: "textarea textarea-bordered w-full",
+				rows: 2,
+				value: list.description ?? "",
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Cor" }),
+			),
+			createElement("input", {
+				name: "color",
+				type: "color",
+				className: "input input-bordered h-12 w-full",
+				value: list.color ?? "#6366f1",
+			}),
+		),
+	);
+
 	openFormModal({
 		title: "Editar lista",
 		submitLabel: "Salvar",
-		bodyHtml: `
-      <div class="flex flex-col gap-3">
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Nome</span></div>
-          <input name="name" class="input input-bordered w-full" required value="${escapeHtml(list.name)}" />
-        </label>
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Descrição</span></div>
-          <textarea name="description" class="textarea textarea-bordered w-full" rows="2">${escapeHtml(list.description ?? "")}</textarea>
-        </label>
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Cor</span></div>
-          <input name="color" type="color" class="input input-bordered h-12 w-full" value="${escapeHtml(list.color ?? "#6366f1")}" />
-        </label>
-      </div>
-    `,
+		body,
 		onSubmit: async (form) => {
 			const { response } = await client.PATCH("/api/lists/{id}/", {
 				params: { path: { id: list.id } },
@@ -234,65 +378,187 @@ export function openTaskModal(
 	onSaved: () => Promise<void>,
 	lists?: TaskList[],
 ): void {
-	const listSelectHtml =
-		lists && lists.length > 0
-			? `<label class="form-control w-full">
-        <div class="label"><span class="label-text">Lista</span></div>
-        <select name="task_list" class="select select-bordered w-full">
-          ${lists
-						.map(
-							(l) =>
-								`<option value="${l.id}" ${(existing?.task_list ?? defaultListId) === l.id ? "selected" : ""}>${escapeHtml(l.name)}</option>`,
-						)
-						.join("")}
-        </select>
-      </label>`
-			: `<input type="hidden" name="task_list" value="${defaultListId}" />`;
+	let listSelectEl: HTMLElement;
+	if (lists && lists.length > 0) {
+		const select = createElement("select", {
+			name: "task_list",
+			className: "select select-bordered w-full",
+		});
+		lists.forEach((l) => {
+			const option = createElement("option", {
+				value: String(l.id),
+				selected: (existing?.task_list ?? defaultListId) === l.id,
+				textContent: l.name,
+			});
+			select.append(option);
+		});
+		listSelectEl = createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Lista" }),
+			),
+			select,
+		);
+	} else {
+		listSelectEl = createElement("input", {
+			type: "hidden",
+			name: "task_list",
+			value: String(defaultListId),
+		});
+	}
+
+	const body = createElement(
+		"div",
+		{ className: "flex flex-col gap-3" },
+		listSelectEl,
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Título" }),
+			),
+			createElement("input", {
+				name: "title",
+				className: "input input-bordered w-full",
+				required: true,
+				value: existing?.title ?? "",
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", {
+					className: "label-text",
+					textContent: "Descrição",
+				}),
+			),
+			createElement("textarea", {
+				name: "description",
+				className: "textarea textarea-bordered w-full",
+				rows: 2,
+				value: existing?.description ?? "",
+			}),
+		),
+		createElement(
+			"div",
+			{ className: "grid grid-cols-2 gap-3" },
+			createElement(
+				"label",
+				{ className: "form-control w-full" },
+				createElement(
+					"div",
+					{ className: "label" },
+					createElement("span", {
+						className: "label-text",
+						textContent: "Prioridade",
+					}),
+				),
+				createElement(
+					"select",
+					{ name: "priority", className: "select select-bordered w-full" },
+					createElement("option", {
+						value: "low",
+						selected: existing?.priority === "low",
+						textContent: "Baixa",
+					}),
+					createElement("option", {
+						value: "medium",
+						selected: !existing || existing?.priority === "medium",
+						textContent: "Média",
+					}),
+					createElement("option", {
+						value: "high",
+						selected: existing?.priority === "high",
+						textContent: "Alta",
+					}),
+				),
+			),
+			createElement(
+				"label",
+				{ className: "form-control w-full" },
+				createElement(
+					"div",
+					{ className: "label" },
+					createElement("span", {
+						className: "label-text",
+						textContent: "Status",
+					}),
+				),
+				createElement(
+					"select",
+					{ name: "status", className: "select select-bordered w-full" },
+					createElement("option", {
+						value: "pending",
+						selected: !existing || existing?.status === "pending",
+						textContent: "Pendente",
+					}),
+					createElement("option", {
+						value: "in_progress",
+						selected: existing?.status === "in_progress",
+						textContent: "Em andamento",
+					}),
+					createElement("option", {
+						value: "done",
+						selected: existing?.status === "done",
+						textContent: "Concluída",
+					}),
+				),
+			),
+		),
+		createElement(
+			"div",
+			{ className: "grid grid-cols-2 gap-3" },
+			createElement(
+				"label",
+				{ className: "form-control w-full" },
+				createElement(
+					"div",
+					{ className: "label" },
+					createElement("span", {
+						className: "label-text",
+						textContent: "Planejada para",
+					}),
+				),
+				createElement("input", {
+					name: "planned_date",
+					type: "date",
+					className: "input input-bordered w-full",
+					value: existing?.planned_date ?? "",
+				}),
+			),
+			createElement(
+				"label",
+				{ className: "form-control w-full" },
+				createElement(
+					"div",
+					{ className: "label" },
+					createElement("span", {
+						className: "label-text",
+						textContent: "Prazo",
+					}),
+				),
+				createElement("input", {
+					name: "due_date",
+					type: "date",
+					className: "input input-bordered w-full",
+					value: existing?.due_date ?? "",
+				}),
+			),
+		),
+	);
 
 	openFormModal({
 		title: existing ? "Editar tarefa" : "Nova tarefa",
 		submitLabel: existing ? "Salvar" : "Criar",
-		bodyHtml: `
-      <div class="flex flex-col gap-3">
-        ${listSelectHtml}
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Título</span></div>
-          <input name="title" class="input input-bordered w-full" required value="${escapeHtml(existing?.title ?? "")}" />
-        </label>
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Descrição</span></div>
-          <textarea name="description" class="textarea textarea-bordered w-full" rows="2">${escapeHtml(existing?.description ?? "")}</textarea>
-        </label>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">Prioridade</span></div>
-            <select name="priority" class="select select-bordered w-full">
-              <option value="low" ${existing?.priority === "low" ? "selected" : ""}>Baixa</option>
-              <option value="medium" ${!existing || existing?.priority === "medium" ? "selected" : ""}>Média</option>
-              <option value="high" ${existing?.priority === "high" ? "selected" : ""}>Alta</option>
-            </select>
-          </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">Status</span></div>
-            <select name="status" class="select select-bordered w-full">
-              <option value="pending" ${!existing || existing?.status === "pending" ? "selected" : ""}>Pendente</option>
-              <option value="in_progress" ${existing?.status === "in_progress" ? "selected" : ""}>Em andamento</option>
-              <option value="done" ${existing?.status === "done" ? "selected" : ""}>Concluída</option>
-            </select>
-          </label>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">Planejada para</span></div>
-            <input name="planned_date" type="date" class="input input-bordered w-full" value="${existing?.planned_date ?? ""}" />
-          </label>
-          <label class="form-control w-full">
-            <div class="label"><span class="label-text">Prazo</span></div>
-            <input name="due_date" type="date" class="input input-bordered w-full" value="${existing?.due_date ?? ""}" />
-          </label>
-        </div>
-      </div>
-    `,
+		body,
 		onSubmit: async (form) => {
 			const title = fieldValue(form, "title");
 			if (!title) {

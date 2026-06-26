@@ -1,6 +1,6 @@
 import { login, register } from "../api/auth.ts";
 import { navigate } from "../navigate.ts";
-import { fieldValue } from "../utils.ts";
+import { createElement, fieldValue } from "../utils.ts";
 
 function setSubmitting(form: HTMLFormElement, submitting: boolean): void {
 	form.querySelector<HTMLButtonElement>("button[type=submit]")!.disabled =
@@ -9,69 +9,179 @@ function setSubmitting(form: HTMLFormElement, submitting: boolean): void {
 
 export function renderAuth(): void {
 	const page = document.querySelector<HTMLElement>("#page")!;
-	page.innerHTML = `
-    <div class="flex flex-col items-center justify-center min-h-[80vh] py-8">
-      <div class="card bg-base-100 shadow-xl w-full max-w-sm">
-        <div class="card-body gap-4">
-          <div class="text-center mb-2">
-            <h1 class="text-3xl font-bold tracking-tight">Taskmaster</h1>
-            <p class="text-base-content/60 text-sm mt-1">Gerencie suas tarefas</p>
-          </div>
+	page.replaceChildren();
 
-          <div role="tablist" class="tabs tabs-boxed">
-            <button id="tab-login" role="tab" type="button" class="tab tab-active">Entrar</button>
-            <button id="tab-register" role="tab" type="button" class="tab">Criar conta</button>
-          </div>
+	const tabLogin = createElement("button", {
+		id: "tab-login",
+		role: "tab",
+		type: "button",
+		className: "tab tab-active",
+		textContent: "Entrar",
+	});
 
-          <form id="login-form" class="flex flex-col gap-3">
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">Usuário</span></div>
-              <input name="username" class="input input-bordered w-full" autocomplete="username" required />
-            </label>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">Senha</span></div>
-              <input name="password" type="password" class="input input-bordered w-full" autocomplete="current-password" required />
-            </label>
-            <p class="text-error text-sm min-h-[1rem]" id="login-error"></p>
-            <button class="btn btn-primary w-full" type="submit">Entrar</button>
-            <div class="text-center text-sm">
-              <a href="#/reset-password" class="link link-primary">Esqueci minha senha</a>
-            </div>
-          </form>
+	const tabRegister = createElement("button", {
+		id: "tab-register",
+		role: "tab",
+		type: "button",
+		className: "tab",
+		textContent: "Criar conta",
+	});
 
-          <form id="register-form" class="flex flex-col gap-3 hidden">
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">Usuário</span></div>
-              <input name="username" class="input input-bordered w-full" autocomplete="username" required />
-            </label>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">E-mail</span></div>
-              <input name="email" type="email" class="input input-bordered w-full" autocomplete="email" required />
-            </label>
-            <label class="form-control w-full">
-              <div class="label"><span class="label-text">Senha</span></div>
-              <input name="password" type="password" class="input input-bordered w-full" autocomplete="new-password" required />
-            </label>
-            <p class="text-error text-sm min-h-[1rem]" id="register-error"></p>
-            <button class="btn btn-primary w-full" type="submit">Criar conta e entrar</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  `;
+	const loginError = createElement("p", {
+		id: "login-error",
+		className: "text-error text-sm min-h-[1rem]",
+	});
 
-	wireTabs();
-	wireLoginForm();
-	wireRegisterForm();
-}
+	const loginForm = createElement(
+		"form",
+		{
+			id: "login-form",
+			className: "flex flex-col gap-3",
+			onsubmit: async (e: Event) => {
+				e.preventDefault();
+				loginError.textContent = "";
+				setSubmitting(loginForm, true);
+				const result = await login(
+					fieldValue(loginForm, "username"),
+					fieldValue(loginForm, "password"),
+				);
+				setSubmitting(loginForm, false);
+				if (result.ok) {
+					navigate("#/");
+				} else {
+					loginError.textContent = result.error;
+				}
+			},
+		},
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Usuário" }),
+			),
+			createElement("input", {
+				name: "username",
+				className: "input input-bordered w-full",
+				autocomplete: "username",
+				required: true,
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Senha" }),
+			),
+			createElement("input", {
+				name: "password",
+				type: "password",
+				className: "input input-bordered w-full",
+				autocomplete: "current-password",
+				required: true,
+			}),
+		),
+		loginError,
+		createElement("button", {
+			className: "btn btn-primary w-full",
+			type: "submit",
+			textContent: "Entrar",
+		}),
+		createElement(
+			"div",
+			{ className: "text-center text-sm" },
+			createElement("a", {
+				href: "#/reset-password",
+				className: "link link-primary",
+				textContent: "Esqueci minha senha",
+			}),
+		),
+	);
 
-function wireTabs(): void {
-	const tabLogin = document.querySelector<HTMLButtonElement>("#tab-login")!;
-	const tabRegister =
-		document.querySelector<HTMLButtonElement>("#tab-register")!;
-	const loginForm = document.querySelector<HTMLFormElement>("#login-form")!;
-	const registerForm =
-		document.querySelector<HTMLFormElement>("#register-form")!;
+	const registerError = createElement("p", {
+		id: "register-error",
+		className: "text-error text-sm min-h-[1rem]",
+	});
+
+	const registerForm = createElement(
+		"form",
+		{
+			id: "register-form",
+			className: "flex flex-col gap-3 hidden",
+			onsubmit: async (e: Event) => {
+				e.preventDefault();
+				registerError.textContent = "";
+				setSubmitting(registerForm, true);
+				const result = await register(
+					fieldValue(registerForm, "username"),
+					fieldValue(registerForm, "email"),
+					fieldValue(registerForm, "password"),
+				);
+				setSubmitting(registerForm, false);
+				if (result.ok) {
+					navigate("#/");
+				} else {
+					registerError.textContent = result.error;
+				}
+			},
+		},
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Usuário" }),
+			),
+			createElement("input", {
+				name: "username",
+				className: "input input-bordered w-full",
+				autocomplete: "username",
+				required: true,
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "E-mail" }),
+			),
+			createElement("input", {
+				name: "email",
+				type: "email",
+				className: "input input-bordered w-full",
+				autocomplete: "email",
+				required: true,
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Senha" }),
+			),
+			createElement("input", {
+				name: "password",
+				type: "password",
+				className: "input input-bordered w-full",
+				autocomplete: "new-password",
+				required: true,
+			}),
+		),
+		registerError,
+		createElement("button", {
+			className: "btn btn-primary w-full",
+			type: "submit",
+			textContent: "Criar conta e entrar",
+		}),
+	);
 
 	const select = (loginActive: boolean): void => {
 		tabLogin.classList.toggle("tab-active", loginActive);
@@ -82,48 +192,39 @@ function wireTabs(): void {
 
 	tabLogin.addEventListener("click", () => select(true));
 	tabRegister.addEventListener("click", () => select(false));
-}
 
-function wireLoginForm(): void {
-	const form = document.querySelector<HTMLFormElement>("#login-form")!;
-	const errorEl = document.querySelector<HTMLParagraphElement>("#login-error")!;
+	const container = createElement(
+		"div",
+		{ className: "flex flex-col items-center justify-center min-h-[80vh] py-8" },
+		createElement(
+			"div",
+			{ className: "card bg-base-100 shadow-xl w-full max-w-sm" },
+			createElement(
+				"div",
+				{ className: "card-body gap-4" },
+				createElement(
+					"div",
+					{ className: "text-center mb-2" },
+					createElement("h1", {
+						className: "text-3xl font-bold tracking-tight",
+						textContent: "Taskmaster",
+					}),
+					createElement("p", {
+						className: "text-base-content/60 text-sm mt-1",
+						textContent: "Gerencie suas tarefas",
+					}),
+				),
+				createElement(
+					"div",
+					{ role: "tablist", className: "tabs tabs-boxed" },
+					tabLogin,
+					tabRegister,
+				),
+				loginForm,
+				registerForm,
+			),
+		),
+	);
 
-	form.addEventListener("submit", async (e) => {
-		e.preventDefault();
-		errorEl.textContent = "";
-		setSubmitting(form, true);
-		const result = await login(
-			fieldValue(form, "username"),
-			fieldValue(form, "password"),
-		);
-		setSubmitting(form, false);
-		if (result.ok) {
-			navigate("#/");
-		} else {
-			errorEl.textContent = result.error;
-		}
-	});
-}
-
-function wireRegisterForm(): void {
-	const form = document.querySelector<HTMLFormElement>("#register-form")!;
-	const errorEl =
-		document.querySelector<HTMLParagraphElement>("#register-error")!;
-
-	form.addEventListener("submit", async (e) => {
-		e.preventDefault();
-		errorEl.textContent = "";
-		setSubmitting(form, true);
-		const result = await register(
-			fieldValue(form, "username"),
-			fieldValue(form, "email"),
-			fieldValue(form, "password"),
-		);
-		setSubmitting(form, false);
-		if (result.ok) {
-			navigate("#/");
-		} else {
-			errorEl.textContent = result.error;
-		}
-	});
+	page.append(container);
 }

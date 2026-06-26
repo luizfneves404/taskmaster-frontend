@@ -1,11 +1,17 @@
 import client from "../api/client.ts";
 import { priorityBadge, statusBadge } from "../components/badges.ts";
-import type { Task, TaskList } from "../types.ts";
-import { escapeHtml, formatDate, formatDateTime } from "../utils.ts";
+import type { TaskList } from "../types.ts";
+import { createElement, formatDate, formatDateTime } from "../utils.ts";
 
 export async function renderHome(): Promise<void> {
 	const page = document.querySelector<HTMLElement>("#page")!;
-	page.innerHTML = `<div class="flex justify-center py-12"><span class="loading loading-spinner loading-lg"></span></div>`;
+	page.replaceChildren(
+		createElement(
+			"div",
+			{ className: "flex justify-center py-12" },
+			createElement("span", { className: "loading loading-spinner loading-lg" }),
+		),
+	);
 
 	const [
 		{ data: user },
@@ -24,7 +30,18 @@ export async function renderHome(): Promise<void> {
 	]);
 
 	if (!user) {
-		page.innerHTML = `<div class="alert alert-error mt-8">Sessão expirada. <a href="#/auth" class="link">Entrar</a></div>`;
+		page.replaceChildren(
+			createElement(
+				"div",
+				{ className: "alert alert-error mt-8" },
+				"Sessão expirada. ",
+				createElement("a", {
+					href: "#/auth",
+					className: "link",
+					textContent: "Entrar",
+				}),
+			),
+		);
 		return;
 	}
 
@@ -36,172 +53,347 @@ export async function renderHome(): Promise<void> {
 		completed_week: 0,
 	};
 
-	page.innerHTML = `
-    <div class="py-6 flex flex-col gap-8">
-      <div>
-        <h1 class="text-2xl font-bold">Olá, ${escapeHtml(user.username)}.</h1>
-        <p class="text-base-content/60 text-sm mt-1">Aqui está o resumo das suas tarefas.</p>
-      </div>
+	const statsSection = createElement(
+		"div",
+		{
+			className:
+				"stats stats-vertical sm:stats-horizontal shadow w-full border border-base-200",
+		},
+		createElement(
+			"div",
+			{ className: "stat" },
+			createElement("div", { className: "stat-title", textContent: "Pendentes" }),
+			createElement("div", {
+				className: "stat-value text-primary",
+				textContent: String(stats.pending),
+			}),
+		),
+		createElement(
+			"div",
+			{ className: "stat" },
+			createElement("div", { className: "stat-title", textContent: "Atrasadas" }),
+			createElement("div", {
+				className: "stat-value text-error",
+				textContent: String(stats.overdue),
+			}),
+		),
+		createElement(
+			"div",
+			{ className: "stat" },
+			createElement("div", {
+				className: "stat-title",
+				textContent: "Para hoje",
+			}),
+			createElement("div", {
+				className: "stat-value text-warning",
+				textContent: String(stats.today),
+			}),
+		),
+		createElement(
+			"div",
+			{ className: "stat" },
+			createElement("div", {
+				className: "stat-title",
+				textContent: "Concluídas na semana",
+			}),
+			createElement("div", {
+				className: "stat-value text-success",
+				textContent: String(stats.completed_week),
+			}),
+		),
+	);
 
-      <div class="stats stats-vertical sm:stats-horizontal shadow w-full border border-base-200">
-        <div class="stat">
-          <div class="stat-title">Pendentes</div>
-          <div class="stat-value text-primary">${stats.pending}</div>
-        </div>
-        <div class="stat">
-          <div class="stat-title">Atrasadas</div>
-          <div class="stat-value text-error">${stats.overdue}</div>
-        </div>
-        <div class="stat">
-          <div class="stat-title">Para hoje</div>
-          <div class="stat-value text-warning">${stats.today}</div>
-        </div>
-        <div class="stat">
-          <div class="stat-title">Concluídas na semana</div>
-          <div class="stat-value text-success">${stats.completed_week}</div>
-        </div>
-      </div>
-
-      <div>
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold">Minhas listas</h2>
-          <a href="#/lists" class="btn btn-sm btn-ghost">Ver todas →</a>
-        </div>
-        ${
-					lists.length === 0
-						? `<div class="text-base-content/50 text-sm">Nenhuma lista ainda. <a href="#/lists" class="link link-primary">Criar lista</a></div>`
-						: `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${lists
-							.slice(0, 6)
-							.map((list) => {
-								const pending = list.pending_count ?? 0;
-								return `
-                <a href="#/lists/${list.id}" class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-l-4" style="border-left-color: ${escapeHtml(list.color ?? "#e5e7eb")}">
-                  <div class="card-body p-4 gap-1">
-                    <div class="flex items-center justify-between">
-                      <span class="font-semibold truncate">${escapeHtml(list.name)}</span>
-                      <span class="badge badge-ghost badge-sm shrink-0 ml-2">${pending} pendente${pending !== 1 ? "s" : ""}</span>
-                    </div>
-                    ${list.description ? `<p class="text-base-content/60 text-xs truncate">${escapeHtml(list.description)}</p>` : ""}
-                  </div>
-                </a>`;
+	const listsGrid = createElement("div", {
+		className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
+	});
+	if (lists.length === 0) {
+		listsGrid.className = "text-base-content/50 text-sm";
+		listsGrid.append(
+			"Nenhuma lista ainda. ",
+			createElement("a", {
+				href: "#/lists",
+				className: "link link-primary",
+				textContent: "Criar lista",
+			}),
+		);
+	} else {
+		lists.slice(0, 6).forEach((list) => {
+			const pending = list.pending_count ?? 0;
+			const card = createElement(
+				"a",
+				{
+					href: `#/lists/${list.id}`,
+					className:
+						"card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-l-4",
+					style: `border-left-color: ${list.color ?? "#e5e7eb"}`,
+				},
+				createElement(
+					"div",
+					{ className: "card-body p-4 gap-1" },
+					createElement(
+						"div",
+						{ className: "flex items-center justify-between" },
+						createElement("span", {
+							className: "font-semibold truncate",
+							textContent: list.name,
+						}),
+						createElement("span", {
+							className: "badge badge-ghost badge-sm shrink-0 ml-2",
+							textContent: `${pending} pendente${pending !== 1 ? "s" : ""}`,
+						}),
+					),
+					list.description
+						? createElement("p", {
+								className: "text-base-content/60 text-xs truncate",
+								textContent: list.description,
 							})
-							.join("")}
-          </div>`
-				}
-      </div>
-
-      ${
-				late.length > 0
-					? `
-        <div>
-          <h2 class="text-lg font-semibold mb-3">Tarefas atrasadas</h2>
-          <div class="overflow-x-auto">
-            <table class="table table-sm bg-base-100 border border-base-200 rounded-box">
-              <thead>
-                <tr><th>Tarefa</th><th>Lista</th><th>Prazo</th></tr>
-              </thead>
-              <tbody>
-                ${late
-									.slice(0, 5)
-									.map(
-										(t) => `
-                  <tr>
-                    <td><a href="#/tasks/${t.id}" class="link link-hover">${escapeHtml(t.title)}</a></td>
-                    <td class="text-base-content/60">${escapeHtml(listMap.get(t.task_list)?.name ?? "—")}</td>
-                    <td class="text-error">${formatDate(t.due_date)}</td>
-                  </tr>`,
-									)
-									.join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>`
-					: ""
-			}
-
-      ${
-				upcoming.length > 0
-					? `
-        <div>
-          <h2 class="text-lg font-semibold mb-3">Próximas tarefas</h2>
-          <div class="overflow-x-auto">
-            <table class="table table-sm bg-base-100 border border-base-200 rounded-box">
-              <thead>
-                <tr><th>Tarefa</th><th>Lista</th><th>Prioridade</th><th>Prazo</th><th>Status</th><th></th></tr>
-              </thead>
-              <tbody>
-                ${upcoming.map((t) => upcomingRow(t, listMap)).join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>`
-					: ""
-			}
-
-      ${
-				completed.length > 0
-					? `
-        <div>
-          <h2 class="text-lg font-semibold mb-3">Tarefas concluídas</h2>
-          <div class="overflow-x-auto">
-            <table class="table table-sm bg-base-100 border border-base-200 rounded-box">
-              <thead>
-                <tr><th>Tarefa</th><th>Lista</th><th>Atualizada</th></tr>
-              </thead>
-              <tbody>
-                ${completed
-									.slice(0, 5)
-									.map(
-										(t) => `
-                  <tr>
-                    <td><a href="#/tasks/${t.id}" class="link link-hover">${escapeHtml(t.title)}</a></td>
-                    <td class="text-base-content/60">${escapeHtml(listMap.get(t.task_list)?.name ?? "—")}</td>
-                    <td class="text-base-content/60">${formatDateTime(t.updated_at)}</td>
-                  </tr>`,
-									)
-									.join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>`
-					: ""
-			}
-    </div>
-  `;
-
-	wireMarkDone();
-}
-
-function upcomingRow(t: Task, listMap: Map<number, TaskList>): string {
-	return `
-    <tr data-task-id="${t.id}">
-      <td><a href="#/tasks/${t.id}" class="link link-hover">${escapeHtml(t.title)}</a></td>
-      <td class="text-base-content/60">${escapeHtml(listMap.get(t.task_list)?.name ?? "—")}</td>
-      <td>${priorityBadge(t.priority ?? "medium")}</td>
-      <td>${formatDate(t.due_date)}</td>
-      <td>${statusBadge(t.status ?? "pending")}</td>
-      <td>
-        ${
-					t.status !== "done"
-						? `<button class="btn btn-xs btn-success mark-done-btn" data-id="${t.id}">Concluir</button>`
-						: ""
-				}
-      </td>
-    </tr>`;
-}
-
-function wireMarkDone(): void {
-	document
-		.querySelectorAll<HTMLButtonElement>(".mark-done-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", async () => {
-				const id = Number(btn.dataset.id);
-				btn.disabled = true;
-				await client.POST("/api/tasks/{id}/toggle/", {
-					params: { path: { id } },
-				});
-				renderHome();
-			});
+						: null,
+				),
+			);
+			listsGrid.append(card);
 		});
+	}
+
+	let lateSection: HTMLElement | null = null;
+	if (late.length > 0) {
+		const tbody = createElement("tbody");
+		late.slice(0, 5).forEach((t) => {
+			const tr = createElement(
+				"tr",
+				{},
+				createElement(
+					"td",
+					{},
+					createElement("a", {
+						href: `#/tasks/${t.id}`,
+						className: "link link-hover",
+						textContent: t.title,
+					}),
+				),
+				createElement("td", {
+					className: "text-base-content/60",
+					textContent: listMap.get(t.task_list)?.name ?? "—",
+				}),
+				createElement("td", {
+					className: "text-error",
+					textContent: formatDate(t.due_date),
+				}),
+			);
+			tbody.append(tr);
+		});
+
+		lateSection = createElement(
+			"div",
+			{},
+			createElement("h2", {
+				className: "text-lg font-semibold mb-3",
+				textContent: "Tarefas atrasadas",
+			}),
+			createElement(
+				"div",
+				{ className: "overflow-x-auto" },
+				createElement(
+					"table",
+					{
+						className:
+							"table table-sm bg-base-100 border border-base-200 rounded-box",
+					},
+					createElement(
+						"thead",
+						{},
+						createElement(
+							"tr",
+							{},
+							createElement("th", { textContent: "Tarefa" }),
+							createElement("th", { textContent: "Lista" }),
+							createElement("th", { textContent: "Prazo" }),
+						),
+					),
+					tbody,
+				),
+			),
+		);
+	}
+
+	let upcomingSection: HTMLElement | null = null;
+	if (upcoming.length > 0) {
+		const tbody = createElement("tbody");
+		upcoming.forEach((t) => {
+			const doneBtn =
+				t.status !== "done"
+					? createElement("button", {
+							className: "btn btn-xs btn-success mark-done-btn",
+							textContent: "Concluir",
+							onclick: async (e: Event) => {
+								const btn = e.currentTarget as HTMLButtonElement;
+								btn.disabled = true;
+								await client.POST("/api/tasks/{id}/toggle/", {
+									params: { path: { id: t.id } },
+								});
+								renderHome();
+							},
+						})
+					: null;
+
+			const tr = createElement(
+				"tr",
+				{ dataset: { taskId: String(t.id) } },
+				createElement(
+					"td",
+					{},
+					createElement("a", {
+						href: `#/tasks/${t.id}`,
+						className: "link link-hover",
+						textContent: t.title,
+					}),
+				),
+				createElement("td", {
+					className: "text-base-content/60",
+					textContent: listMap.get(t.task_list)?.name ?? "—",
+				}),
+				createElement("td", {}, priorityBadge(t.priority ?? "medium")),
+				createElement("td", { textContent: formatDate(t.due_date) }),
+				createElement("td", {}, statusBadge(t.status ?? "pending")),
+				createElement("td", {}, doneBtn),
+			);
+			tbody.append(tr);
+		});
+
+		upcomingSection = createElement(
+			"div",
+			{},
+			createElement("h2", {
+				className: "text-lg font-semibold mb-3",
+				textContent: "Próximas tarefas",
+			}),
+			createElement(
+				"div",
+				{ className: "overflow-x-auto" },
+				createElement(
+					"table",
+					{
+						className:
+							"table table-sm bg-base-100 border border-base-200 rounded-box",
+					},
+					createElement(
+						"thead",
+						{},
+						createElement(
+							"tr",
+							{},
+							createElement("th", { textContent: "Tarefa" }),
+							createElement("th", { textContent: "Lista" }),
+							createElement("th", { textContent: "Prioridade" }),
+							createElement("th", { textContent: "Prazo" }),
+							createElement("th", { textContent: "Status" }),
+							createElement("th"),
+						),
+					),
+					tbody,
+				),
+			),
+		);
+	}
+
+	let completedSection: HTMLElement | null = null;
+	if (completed.length > 0) {
+		const tbody = createElement("tbody");
+		completed.slice(0, 5).forEach((t) => {
+			const tr = createElement(
+				"tr",
+				{},
+				createElement(
+					"td",
+					{},
+					createElement("a", {
+						href: `#/tasks/${t.id}`,
+						className: "link link-hover",
+						textContent: t.title,
+					}),
+				),
+				createElement("td", {
+					className: "text-base-content/60",
+					textContent: listMap.get(t.task_list)?.name ?? "—",
+				}),
+				createElement("td", {
+					className: "text-base-content/60",
+					textContent: formatDateTime(t.updated_at),
+				}),
+			);
+			tbody.append(tr);
+		});
+
+		completedSection = createElement(
+			"div",
+			{},
+			createElement("h2", {
+				className: "text-lg font-semibold mb-3",
+				textContent: "Tarefas concluídas",
+			}),
+			createElement(
+				"div",
+				{ className: "overflow-x-auto" },
+				createElement(
+					"table",
+					{
+						className:
+							"table table-sm bg-base-100 border border-base-200 rounded-box",
+					},
+					createElement(
+						"thead",
+						{},
+						createElement(
+							"tr",
+							{},
+							createElement("th", { textContent: "Tarefa" }),
+							createElement("th", { textContent: "Lista" }),
+							createElement("th", { textContent: "Atualizada" }),
+						),
+					),
+					tbody,
+				),
+			),
+		);
+	}
+
+	const container = createElement(
+		"div",
+		{ className: "py-6 flex flex-col gap-8" },
+		createElement(
+			"div",
+			{},
+			createElement("h1", {
+				className: "text-2xl font-bold",
+				textContent: `Olá, ${user.username}.`,
+			}),
+			createElement("p", {
+				className: "text-base-content/60 text-sm mt-1",
+				textContent: "Aqui está o resumo das suas tarefas.",
+			}),
+		),
+		statsSection,
+		createElement(
+			"div",
+			{},
+			createElement(
+				"div",
+				{ className: "flex items-center justify-between mb-4" },
+				createElement("h2", {
+					className: "text-lg font-semibold",
+					textContent: "Minhas listas",
+				}),
+				createElement("a", {
+					href: "#/lists",
+					className: "btn btn-sm btn-ghost",
+					textContent: "Ver todas →",
+				}),
+			),
+			listsGrid,
+		),
+		lateSection,
+		upcomingSection,
+		completedSection,
+	);
+
+	page.replaceChildren(container);
 }

@@ -1,4 +1,6 @@
-export function priorityBadge(priority: string): string {
+import { createElement } from "../utils.ts";
+
+export function priorityBadge(priority: string): HTMLElement {
 	const map: Record<string, string> = {
 		low: "badge-success",
 		medium: "badge-warning",
@@ -10,10 +12,13 @@ export function priorityBadge(priority: string): string {
 		high: "Alta",
 	};
 	const cls = map[priority] ?? "badge-neutral";
-	return `<span class="badge ${cls} badge-sm">${label[priority] ?? priority}</span>`;
+	return createElement("span", {
+		className: `badge ${cls} badge-sm`,
+		textContent: label[priority] ?? priority,
+	});
 }
 
-export function statusBadge(status: string): string {
+export function statusBadge(status: string): HTMLElement {
 	const map: Record<string, string> = {
 		pending: "badge-neutral",
 		in_progress: "badge-info",
@@ -25,7 +30,10 @@ export function statusBadge(status: string): string {
 		done: "Concluída",
 	};
 	const cls = map[status] ?? "badge-neutral";
-	return `<span class="badge ${cls} badge-sm">${label[status] ?? status}</span>`;
+	return createElement("span", {
+		className: `badge ${cls} badge-sm`,
+		textContent: label[status] ?? status,
+	});
 }
 
 export function priorityBorder(priority: string): string {

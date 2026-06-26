@@ -1,93 +1,156 @@
-export function openConfirmModal(message: string, onConfirm: () => void): void {
+import { createElement } from "../utils.ts";
+
+export function openConfirmModal(
+	message: string | Node | (string | Node)[],
+	onConfirm: () => void,
+): void {
 	const existing = document.getElementById("tm-confirm-modal");
 	if (existing) existing.remove();
 
-	const dialog = document.createElement("dialog");
-	dialog.id = "tm-confirm-modal";
-	dialog.className = "modal modal-open";
-	dialog.innerHTML = `
-    <div class="modal-box">
-      <p class="text-base">${message}</p>
-      <div class="modal-action">
-        <button id="tm-confirm-yes" class="btn btn-error">Confirmar</button>
-        <button id="tm-confirm-no" class="btn btn-ghost">Cancelar</button>
-      </div>
-    </div>
-    <form method="dialog" class="modal-backdrop"><button>fechar</button></form>
-  `;
-	document.body.appendChild(dialog);
+	const dialog = createElement("dialog", {
+		id: "tm-confirm-modal",
+		className: "modal modal-open",
+	});
 
-	dialog.querySelector("#tm-confirm-yes")!.addEventListener("click", () => {
-		dialog.remove();
-		onConfirm();
-	});
-	dialog.querySelector("#tm-confirm-no")!.addEventListener("click", () => {
-		dialog.remove();
-	});
-	dialog
-		.querySelector(".modal-backdrop button")!
-		.addEventListener("click", () => {
+	const p = createElement("p", { className: "text-base" });
+	if (Array.isArray(message)) {
+		p.append(...message);
+	} else {
+		p.append(message);
+	}
+
+	const confirmBtn = createElement("button", {
+		id: "tm-confirm-yes",
+		className: "btn btn-error",
+		textContent: "Confirmar",
+		onclick: () => {
 			dialog.remove();
-		});
+			onConfirm();
+		},
+	});
+
+	const cancelBtn = createElement("button", {
+		id: "tm-confirm-no",
+		className: "btn btn-ghost",
+		textContent: "Cancelar",
+		onclick: () => {
+			dialog.remove();
+		},
+	});
+
+	const backdropBtn = createElement("button", {
+		textContent: "fechar",
+		onclick: () => {
+			dialog.remove();
+		},
+	});
+
+	const box = createElement(
+		"div",
+		{ className: "modal-box" },
+		p,
+		createElement("div", { className: "modal-action" }, confirmBtn, cancelBtn),
+	);
+
+	const backdropForm = createElement(
+		"form",
+		{ method: "dialog", className: "modal-backdrop" },
+		backdropBtn,
+	);
+
+	dialog.append(box, backdropForm);
+	document.body.appendChild(dialog);
 }
 
 export function openFormModal(opts: {
 	title: string;
-	bodyHtml: string;
+	body: HTMLElement | DocumentFragment;
 	submitLabel: string;
 	onSubmit: (form: HTMLFormElement) => Promise<void>;
 }): void {
 	const existing = document.getElementById("tm-form-modal");
 	if (existing) existing.remove();
 
-	const dialog = document.createElement("dialog");
-	dialog.id = "tm-form-modal";
-	dialog.className = "modal modal-open";
-	dialog.innerHTML = `
-    <div class="modal-box w-full max-w-lg">
-      <h3 class="font-bold text-lg mb-4">${opts.title}</h3>
-      <form id="tm-form-modal-form" novalidate>
-        ${opts.bodyHtml}
-        <p class="text-error text-sm mt-2 min-h-[1rem]" id="tm-form-modal-error"></p>
-        <div class="modal-action mt-4">
-          <button type="submit" id="tm-form-modal-submit" class="btn btn-primary">${opts.submitLabel}</button>
-          <button type="button" id="tm-form-modal-cancel" class="btn btn-ghost">Cancelar</button>
-        </div>
-      </form>
-    </div>
-    <form method="dialog" class="modal-backdrop"><button>fechar</button></form>
-  `;
-	document.body.appendChild(dialog);
-
-	const form = dialog.querySelector<HTMLFormElement>("#tm-form-modal-form")!;
-	const errorEl = dialog.querySelector<HTMLElement>("#tm-form-modal-error")!;
-	const submitBtn = dialog.querySelector<HTMLButtonElement>(
-		"#tm-form-modal-submit",
-	)!;
-
-	form.addEventListener("submit", async (e) => {
-		e.preventDefault();
-		errorEl.textContent = "";
-		submitBtn.disabled = true;
-		try {
-			await opts.onSubmit(form);
-		} catch (err) {
-			errorEl.textContent =
-				err instanceof Error ? err.message : "Erro desconhecido.";
-			submitBtn.disabled = false;
-		}
+	const errorEl = createElement("p", {
+		id: "tm-form-modal-error",
+		className: "text-error text-sm mt-2 min-h-[1rem]",
 	});
 
-	dialog
-		.querySelector("#tm-form-modal-cancel")!
-		.addEventListener("click", () => {
+	const submitBtn = createElement("button", {
+		type: "submit",
+		id: "tm-form-modal-submit",
+		className: "btn btn-primary",
+		textContent: opts.submitLabel,
+	});
+
+	const dialog = createElement("dialog", {
+		id: "tm-form-modal",
+		className: "modal modal-open",
+	});
+
+	const cancelBtn = createElement("button", {
+		type: "button",
+		id: "tm-form-modal-cancel",
+		className: "btn btn-ghost",
+		textContent: "Cancelar",
+		onclick: () => {
 			dialog.remove();
-		});
-	dialog
-		.querySelector(".modal-backdrop button")!
-		.addEventListener("click", () => {
+		},
+	});
+
+	const backdropBtn = createElement("button", {
+		textContent: "fechar",
+		onclick: () => {
 			dialog.remove();
-		});
+		},
+	});
+
+	const form = createElement(
+		"form",
+		{
+			id: "tm-form-modal-form",
+			noValidate: true,
+			onsubmit: async (e: Event) => {
+				e.preventDefault();
+				errorEl.textContent = "";
+				submitBtn.disabled = true;
+				try {
+					await opts.onSubmit(form);
+				} catch (err) {
+					errorEl.textContent =
+						err instanceof Error ? err.message : "Erro desconhecido.";
+					submitBtn.disabled = false;
+				}
+			},
+		},
+		opts.body,
+		errorEl,
+		createElement(
+			"div",
+			{ className: "modal-action mt-4" },
+			submitBtn,
+			cancelBtn,
+		),
+	);
+
+	const box = createElement(
+		"div",
+		{ className: "modal-box w-full max-w-lg" },
+		createElement("h3", {
+			className: "font-bold text-lg mb-4",
+			textContent: opts.title,
+		}),
+		form,
+	);
+
+	const backdropForm = createElement(
+		"form",
+		{ method: "dialog", className: "modal-backdrop" },
+		backdropBtn,
+	);
+
+	dialog.append(box, backdropForm);
+	document.body.appendChild(dialog);
 }
 
 export function closeFormModal(): void {

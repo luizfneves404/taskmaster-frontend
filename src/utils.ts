@@ -57,3 +57,43 @@ export async function extractError(
 	}
 	return messageFromError(body, fallback);
 }
+
+export function createElement<K extends keyof HTMLElementTagNameMap>(
+	tag: K,
+	props?: Record<string, any>,
+	...children: (string | Node | undefined | null | false | boolean)[]
+): HTMLElementTagNameMap[K] {
+	const el = document.createElement(tag);
+	if (props) {
+		const { dataset, style, ...rest } = props;
+		for (const [key, val] of Object.entries(rest)) {
+			if (key.startsWith("on") && typeof val === "function") {
+				el.addEventListener(key.slice(2).toLowerCase(), val as EventListener);
+			} else {
+				(el as any)[key] = val;
+			}
+		}
+		if (dataset) {
+			Object.assign(el.dataset, dataset);
+		}
+		if (style) {
+			if (typeof style === "string") {
+				el.style.cssText = style;
+			} else {
+				Object.assign(el.style, style);
+			}
+		}
+	}
+	for (const child of children) {
+		if (
+			child !== undefined &&
+			child !== null &&
+			child !== false &&
+			child !== true
+		) {
+			el.append(child);
+		}
+	}
+	return el;
+}
+

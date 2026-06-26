@@ -7,11 +7,17 @@ import {
 	setFormModalError,
 } from "../components/modal.ts";
 import type { TaskList } from "../types.ts";
-import { escapeHtml, extractError, fieldValue } from "../utils.ts";
+import { createElement, extractError, fieldValue } from "../utils.ts";
 
 export async function renderLists(): Promise<void> {
 	const page = document.querySelector<HTMLElement>("#page")!;
-	page.innerHTML = `<div class="flex justify-center py-12"><span class="loading loading-spinner loading-lg"></span></div>`;
+	page.replaceChildren(
+		createElement(
+			"div",
+			{ className: "flex justify-center py-12" },
+			createElement("span", { className: "loading loading-spinner loading-lg" }),
+		),
+	);
 
 	const { data: lists = [] } = await client.GET("/api/lists/");
 
@@ -21,107 +27,212 @@ export async function renderLists(): Promise<void> {
 function renderListsContent(lists: TaskList[]): void {
 	const page = document.querySelector<HTMLElement>("#page")!;
 
-	page.innerHTML = `
-    <div class="py-6 flex flex-col gap-6">
-      <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Minhas listas</h1>
-        <button id="new-list-btn" class="btn btn-primary btn-sm">+ Nova lista</button>
-      </div>
+	const header = createElement(
+		"div",
+		{ className: "flex items-center justify-between" },
+		createElement("h1", {
+			className: "text-2xl font-bold",
+			textContent: "Minhas listas",
+		}),
+		createElement("button", {
+			id: "new-list-btn",
+			className: "btn btn-primary btn-sm",
+			textContent: "+ Nova lista",
+			onclick: () => {
+				openListModal(null, async () => renderLists());
+			},
+		}),
+	);
 
-      ${
-				lists.length === 0
-					? `<div class="text-center py-16 text-base-content/50">
-            <p class="text-lg">Nenhuma lista ainda.</p>
-            <p class="text-sm mt-1">Crie sua primeira lista para organizar suas tarefas.</p>
-          </div>`
-					: `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${lists.map((list) => listCard(list)).join("")}
-        </div>`
-			}
-    </div>
-  `;
-
-	document.querySelector("#new-list-btn")!.addEventListener("click", () => {
-		openListModal(null, async () => renderLists());
-	});
-
-	document
-		.querySelectorAll<HTMLButtonElement>(".edit-list-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", (e) => {
-				e.preventDefault();
-				const id = Number(btn.dataset.id);
-				const list = lists.find((l) => l.id === id);
-				if (list) openListModal(list, async () => renderLists());
-			});
+	let content: HTMLElement;
+	if (lists.length === 0) {
+		content = createElement(
+			"div",
+			{ className: "text-center py-16 text-base-content/50" },
+			createElement("p", {
+				className: "text-lg",
+				textContent: "Nenhuma lista ainda.",
+			}),
+			createElement("p", {
+				className: "text-sm mt-1",
+				textContent: "Crie sua primeira lista para organizar suas tarefas.",
+			}),
+		);
+	} else {
+		const grid = createElement("div", {
+			className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
 		});
-
-	document
-		.querySelectorAll<HTMLButtonElement>(".delete-list-btn")
-		.forEach((btn) => {
-			btn.addEventListener("click", (e) => {
-				e.preventDefault();
-				const id = Number(btn.dataset.id);
-				const list = lists.find((l) => l.id === id);
-				openConfirmModal(
-					`Excluir a lista "<strong>${escapeHtml(list?.name ?? "")}</strong>"? Todas as tarefas serão removidas.`,
-					async () => {
-						await client.DELETE("/api/lists/{id}/", {
-							params: { path: { id } },
-						});
-						renderLists();
-					},
-				);
-			});
+		lists.forEach((list) => {
+			const card = listCard(
+				list,
+				() => openListModal(list, async () => renderLists()),
+				() => {
+					const strong = createElement("strong", { textContent: list.name });
+					openConfirmModal(
+						[
+							'Excluir a lista "',
+							strong,
+							'"? Todas as tarefas serão removidas.',
+						],
+						async () => {
+							await client.DELETE("/api/lists/{id}/", {
+								params: { path: { id: list.id } },
+							});
+							renderLists();
+						},
+					);
+				},
+			);
+			grid.append(card);
 		});
+		content = grid;
+	}
+
+	const container = createElement(
+		"div",
+		{ className: "py-6 flex flex-col gap-6" },
+		header,
+		content,
+	);
+
+	page.replaceChildren(container);
 }
 
-function listCard(list: TaskList): string {
+function listCard(
+	list: TaskList,
+	onEdit: () => void,
+	onDelete: () => void,
+): HTMLElement {
 	const color = list.color ?? "#e5e7eb";
 	const pending = list.pending_count ?? 0;
-	return `
-    <a href="#/lists/${list.id}" class="card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow border-l-4 block" style="border-left-color: ${escapeHtml(color)}">
-      <div class="card-body p-4 gap-2">
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="w-3 h-3 rounded-full shrink-0" style="background: ${escapeHtml(color)}"></span>
-            <span class="font-semibold truncate">${escapeHtml(list.name)}</span>
-          </div>
-          <span class="badge badge-ghost badge-sm shrink-0">${pending} pendente${pending !== 1 ? "s" : ""}</span>
-        </div>
-        ${list.description ? `<p class="text-base-content/60 text-sm line-clamp-2">${escapeHtml(list.description)}</p>` : ""}
-        <div class="flex gap-2 mt-1" onclick="event.preventDefault()">
-          <button class="btn btn-xs btn-ghost edit-list-btn" data-id="${list.id}">Editar</button>
-          <button class="btn btn-xs btn-error btn-outline delete-list-btn" data-id="${list.id}">Apagar</button>
-        </div>
-      </div>
-    </a>
-  `;
+
+	return createElement(
+		"a",
+		{
+			href: `#/lists/${list.id}`,
+			className:
+				"card bg-base-100 border border-base-200 shadow-sm hover:shadow-md transition-shadow border-l-4 block",
+			style: `border-left-color: ${color}`,
+		},
+		createElement(
+			"div",
+			{ className: "card-body p-4 gap-2" },
+			createElement(
+				"div",
+				{ className: "flex items-start justify-between gap-2" },
+				createElement(
+					"div",
+					{ className: "flex items-center gap-2 min-w-0" },
+					createElement("span", {
+						className: "w-3 h-3 rounded-full shrink-0",
+						style: `background: ${color}`,
+					}),
+					createElement("span", {
+						className: "font-semibold truncate",
+						textContent: list.name,
+					}),
+				),
+				createElement("span", {
+					className: "badge badge-ghost badge-sm shrink-0",
+					textContent: `${pending} pendente${pending !== 1 ? "s" : ""}`,
+				}),
+			),
+			list.description
+				? createElement("p", {
+						className: "text-base-content/60 text-sm line-clamp-2",
+						textContent: list.description,
+					})
+				: null,
+			createElement(
+				"div",
+				{
+					className: "flex gap-2 mt-1",
+					onclick: (e: Event) => {
+						e.preventDefault();
+					},
+				},
+				createElement("button", {
+					className: "btn btn-xs btn-ghost",
+					textContent: "Editar",
+					onclick: (e: Event) => {
+						e.preventDefault();
+						onEdit();
+					},
+				}),
+				createElement("button", {
+					className: "btn btn-xs btn-error btn-outline",
+					textContent: "Apagar",
+					onclick: (e: Event) => {
+						e.preventDefault();
+						onDelete();
+					},
+				}),
+			),
+		),
+	);
 }
 
 function openListModal(
 	existing: TaskList | null,
 	onSaved: () => Promise<void>,
 ): void {
+	const body = createElement(
+		"div",
+		{ className: "flex flex-col gap-3" },
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Nome" }),
+			),
+			createElement("input", {
+				name: "name",
+				className: "input input-bordered w-full",
+				required: true,
+				value: existing?.name ?? "",
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", {
+					className: "label-text",
+					textContent: "Descrição",
+				}),
+			),
+			createElement("textarea", {
+				name: "description",
+				className: "textarea textarea-bordered w-full",
+				rows: 2,
+				value: existing?.description ?? "",
+			}),
+		),
+		createElement(
+			"label",
+			{ className: "form-control w-full" },
+			createElement(
+				"div",
+				{ className: "label" },
+				createElement("span", { className: "label-text", textContent: "Cor" }),
+			),
+			createElement("input", {
+				name: "color",
+				type: "color",
+				className: "input input-bordered h-12 w-full",
+				value: existing?.color ?? "#6366f1",
+			}),
+		),
+	);
+
 	openFormModal({
 		title: existing ? "Editar lista" : "Nova lista",
 		submitLabel: existing ? "Salvar" : "Criar",
-		bodyHtml: `
-      <div class="flex flex-col gap-3">
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Nome</span></div>
-          <input name="name" class="input input-bordered w-full" required value="${escapeHtml(existing?.name ?? "")}" />
-        </label>
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Descrição</span></div>
-          <textarea name="description" class="textarea textarea-bordered w-full" rows="2">${escapeHtml(existing?.description ?? "")}</textarea>
-        </label>
-        <label class="form-control w-full">
-          <div class="label"><span class="label-text">Cor</span></div>
-          <input name="color" type="color" class="input input-bordered h-12 w-full" value="${escapeHtml(existing?.color ?? "#6366f1")}" />
-        </label>
-      </div>
-    `,
+		body,
 		onSubmit: async (form) => {
 			const name = fieldValue(form, "name");
 			if (!name) {

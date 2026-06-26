@@ -1,5 +1,6 @@
 import { isAuthenticated, logout } from "../api/auth.ts";
 import { navigate } from "../navigate.ts";
+import { createElement } from "../utils.ts";
 
 export function renderNavbar(): void {
 	const el = document.querySelector<HTMLElement>("#navbar-container");
@@ -8,42 +9,72 @@ export function renderNavbar(): void {
 	const hash = window.location.hash || "#/";
 	const auth = isAuthenticated();
 
-	const navLink = (href: string, label: string): string => {
-		const isActive =
-			href === "#/"
-				? hash === "#/" || hash === "#" || hash === ""
-				: hash.startsWith(href);
-		return `<li><a href="${href}" class="${isActive ? "active" : ""}">${label}</a></li>`;
-	};
+	// Clear parent
+	el.replaceChildren();
 
-	el.innerHTML = `
-    <div class="navbar bg-base-100 shadow-sm sticky top-0 z-50 border-b border-base-200">
-      <div class="flex-1">
-        <a href="#/" class="btn btn-ghost text-xl font-bold tracking-tight">Taskmaster</a>
-      </div>
-      <div class="flex-none gap-2">
-        ${
-					auth
-						? `
-          <ul class="menu menu-horizontal px-1 hidden sm:flex">
-            ${navLink("#/", "Início")}
-            ${navLink("#/lists", "Listas")}
-            ${navLink("#/profile", "Perfil")}
-          </ul>
-          <button id="navbar-logout" class="btn btn-ghost btn-sm">Sair</button>
-        `
-						: `
-          <a href="#/auth" class="btn btn-ghost btn-sm">Entrar</a>
-        `
-				}
-      </div>
-    </div>
-  `;
+	const brandLink = createElement("a", {
+		href: "#/",
+		className: "btn btn-ghost text-xl font-bold tracking-tight",
+		textContent: "Taskmaster",
+	});
 
-	document
-		.querySelector<HTMLButtonElement>("#navbar-logout")
-		?.addEventListener("click", async () => {
-			await logout();
-			navigate("#/auth");
+	const flex1 = createElement("div", { className: "flex-1" }, brandLink);
+
+	const flexNone = createElement("div", { className: "flex-none gap-2" });
+
+	if (auth) {
+		const ul = createElement("ul", {
+			className: "menu menu-horizontal px-1 hidden sm:flex",
 		});
+
+		const links = [
+			{ href: "#/", label: "Início" },
+			{ href: "#/lists", label: "Listas" },
+			{ href: "#/profile", label: "Perfil" },
+		];
+
+		links.forEach(({ href, label }) => {
+			const isActive =
+				href === "#/"
+					? hash === "#/" || hash === "#" || hash === ""
+					: hash.startsWith(href);
+			const a = createElement("a", {
+				href,
+				className: isActive ? "active" : "",
+				textContent: label,
+			});
+			ul.append(createElement("li", {}, a));
+		});
+
+		const logoutBtn = createElement("button", {
+			id: "navbar-logout",
+			className: "btn btn-ghost btn-sm",
+			textContent: "Sair",
+			onclick: async () => {
+				await logout();
+				navigate("#/auth");
+			},
+		});
+
+		flexNone.append(ul, logoutBtn);
+	} else {
+		const loginLink = createElement("a", {
+			href: "#/auth",
+			className: "btn btn-ghost btn-sm",
+			textContent: "Entrar",
+		});
+		flexNone.append(loginLink);
+	}
+
+	const navbar = createElement(
+		"div",
+		{
+			className:
+				"navbar bg-base-100 shadow-sm sticky top-0 z-50 border-b border-base-200",
+		},
+		flex1,
+		flexNone,
+	);
+
+	el.append(navbar);
 }
