@@ -4,6 +4,44 @@
  */
 
 export interface paths {
+    "/api/lists/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        get: operations["lists_list"];
+        put?: never;
+        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        post: operations["lists_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lists/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        get: operations["lists_retrieve"];
+        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        put: operations["lists_update"];
+        post?: never;
+        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        delete: operations["lists_destroy"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de listas de tarefas (TaskList) pertencentes ao usuário autenticado. */
+        patch: operations["lists_partial_update"];
+        trace?: never;
+    };
     "/api/schema/": {
         parameters: {
             query?: never;
@@ -24,6 +62,44 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        get: operations["tasks_list"];
+        put?: never;
+        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        post: operations["tasks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        get: operations["tasks_retrieve"];
+        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        put: operations["tasks_update"];
+        post?: never;
+        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        delete: operations["tasks_destroy"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de tarefas, restritas ao usuário autenticado. */
+        patch: operations["tasks_partial_update"];
         trace?: never;
     };
     "/api/token/": {
@@ -70,6 +146,78 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Serializer de tarefas (Task), vinculadas a uma TaskList do usuário autenticado. */
+        PatchedTask: {
+            readonly id?: number;
+            task_list?: number;
+            readonly owner?: number | null;
+            title?: string;
+            description?: string;
+            priority?: components["schemas"]["PriorityEnum"];
+            status?: components["schemas"]["StatusEnum"];
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: date */
+            planned_date?: string | null;
+            readonly done?: boolean;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+        };
+        /** @description Serializer de listas de tarefas (TaskList) do usuário autenticado. */
+        PatchedTaskList: {
+            readonly id?: number;
+            name?: string;
+            description?: string | null;
+            color?: string;
+            readonly user?: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+        };
+        /**
+         * @description * `low` - Baixa
+         *     * `medium` - Média
+         *     * `high` - Alta
+         * @enum {string}
+         */
+        PriorityEnum: "low" | "medium" | "high";
+        /**
+         * @description * `pending` - Pendente
+         *     * `in_progress` - Em andamento
+         *     * `done` - Concluída
+         * @enum {string}
+         */
+        StatusEnum: "pending" | "in_progress" | "done";
+        /** @description Serializer de tarefas (Task), vinculadas a uma TaskList do usuário autenticado. */
+        Task: {
+            readonly id: number;
+            task_list: number;
+            readonly owner: number | null;
+            title: string;
+            description?: string;
+            priority?: components["schemas"]["PriorityEnum"];
+            status?: components["schemas"]["StatusEnum"];
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: date */
+            planned_date?: string | null;
+            readonly done: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /** @description Serializer de listas de tarefas (TaskList) do usuário autenticado. */
+        TaskList: {
+            readonly id: number;
+            name: string;
+            description?: string | null;
+            color?: string;
+            readonly user: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         TokenObtainPair: {
             username: string;
             password: string;
@@ -89,6 +237,149 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    lists_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskList"][];
+                };
+            };
+        };
+    };
+    lists_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskList"];
+                "application/x-www-form-urlencoded": components["schemas"]["TaskList"];
+                "multipart/form-data": components["schemas"]["TaskList"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskList"];
+                };
+            };
+        };
+    };
+    lists_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task list. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskList"];
+                };
+            };
+        };
+    };
+    lists_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task list. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskList"];
+                "application/x-www-form-urlencoded": components["schemas"]["TaskList"];
+                "multipart/form-data": components["schemas"]["TaskList"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskList"];
+                };
+            };
+        };
+    };
+    lists_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task list. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lists_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task list. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTaskList"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTaskList"];
+                "multipart/form-data": components["schemas"]["PatchedTaskList"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskList"];
+                };
+            };
+        };
+    };
     schema_retrieve: {
         parameters: {
             query?: {
@@ -118,6 +409,149 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    tasks_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"][];
+                };
+            };
+        };
+    };
+    tasks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Task"];
+                "application/x-www-form-urlencoded": components["schemas"]["Task"];
+                "multipart/form-data": components["schemas"]["Task"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    tasks_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    tasks_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Task"];
+                "application/x-www-form-urlencoded": components["schemas"]["Task"];
+                "multipart/form-data": components["schemas"]["Task"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    tasks_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tasks_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Um valor inteiro único que identifica este task. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTask"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTask"];
+                "multipart/form-data": components["schemas"]["PatchedTask"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
                 };
             };
         };
