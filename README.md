@@ -2,7 +2,7 @@
 
 # Regras para desenvolvimento
 
-TypeScript somente. Não usar inline. Não usar innerHTML.
+TypeScript somente. Não usar código inline, referenciar arquivo. Não usar innerHTML.
 
 # Setup
 

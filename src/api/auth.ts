@@ -186,6 +186,48 @@ export async function logout(): Promise<void> {
 	clearTokens();
 }
 
+export async function requestPasswordReset(email: string): Promise<Result> {
+	let response: Response;
+	try {
+		response = await postJson("/api/auth/password-reset/", { email });
+	} catch (err) {
+		return { ok: false, error: networkError(err) };
+	}
+	if (!response.ok) {
+		const body = await readBody(response);
+		return {
+			ok: false,
+			error: messageFromErrorBody(body, "Erro ao solicitar redefinição."),
+		};
+	}
+	return { ok: true, data: undefined };
+}
+
+export async function confirmPasswordReset(
+	uid: string,
+	token: string,
+	newPassword: string,
+): Promise<Result> {
+	let response: Response;
+	try {
+		response = await postJson("/api/auth/password-reset/confirm/", {
+			uid,
+			token,
+			new_password: newPassword,
+		});
+	} catch (err) {
+		return { ok: false, error: networkError(err) };
+	}
+	if (!response.ok) {
+		const body = await readBody(response);
+		return {
+			ok: false,
+			error: messageFromErrorBody(body, "Link inválido ou expirado."),
+		};
+	}
+	return { ok: true, data: undefined };
+}
+
 function networkError(err: unknown): string {
 	const detail = err instanceof Error ? err.message : String(err);
 	return `Não foi possível conectar ao backend (${detail}).`;
