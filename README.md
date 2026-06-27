@@ -98,7 +98,7 @@ Certifique-se de ter o **Bun** instalado em sua máquina.
 
 ---
 
-## 🧪 Relatório de Testes (O que funcionou e o que não funcionou)
+## 🧪 Relatório de Testes (O que funcionou)
 
 > [!NOTE]
 > Todos os testes abaixo foram realizados integrando o frontend com a API executada localmente e em ambiente de staging.
